@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.pedropathing.ivy.Command;
+import com.pedropathing.ivy.commands.Commands;
 import dev.nextftc.hardware.actuators.NextMotor;
 import dev.nextftc.hardware.sensors.NextIMU;
 import dev.nextftc.robot.Mechanism;
@@ -61,7 +62,7 @@ public class Drivetrain implements Mechanism {
      * Returns a command to drive using the given joystick input suppliers.
      */
     public Command driveCommand(DoubleSupplier forward, DoubleSupplier strafe, DoubleSupplier turn) {
-        return infinite(() -> drive(forward.getAsDouble(), strafe.getAsDouble(), turn.getAsDouble()))
+        return Commands.infinite(() -> drive(forward.getAsDouble(), strafe.getAsDouble(), turn.getAsDouble()))
                 .setEnd(endCondition -> stop());
     }
 
