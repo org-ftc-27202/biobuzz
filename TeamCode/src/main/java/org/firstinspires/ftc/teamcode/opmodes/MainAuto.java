@@ -3,22 +3,20 @@ package org.firstinspires.ftc.teamcode.opmodes;
 import com.pedropathing.ivy.Scheduler;
 import com.pedropathing.ivy.commands.Commands;
 import com.pedropathing.ivy.groups.Groups;
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
+import dev.frozenmilk.sinister.loading.Pinned;
+import dev.nextftc.robot.opmode.NextAutonomous;
 import dev.nextftc.robot.opmode.NextOpMode;
 import org.firstinspires.ftc.teamcode.Sator;
 
 /**
  * Main Autonomous mode for Sator robot using NextFTC framework.
  */
-@Autonomous(name = "Main Autonomous", group = "Autonomous")
+
+@NextAutonomous(name = "Main Autonomous", group = "Autonomous")
 public class MainAuto extends NextOpMode {
 
     private final Sator robot;
-
-    public MainAuto() {
-        this(new Sator());
-    }
 
     public MainAuto(Sator robot) {
         super(robot);

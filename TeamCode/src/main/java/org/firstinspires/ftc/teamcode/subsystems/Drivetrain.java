@@ -13,10 +13,10 @@ import java.util.function.DoubleSupplier;
  */
 public class Drivetrain implements Mechanism {
 
-    private final NextMotor frontLeft = new NextMotor("frontLeft");
-    private final NextMotor backLeft = new NextMotor("backLeft");
-    private final NextMotor frontRight = new NextMotor("frontRight");
-    private final NextMotor backRight = new NextMotor("backRight");
+    private final NextMotor frontLeft = new NextMotor("leftFront");
+    private final NextMotor backLeft = new NextMotor("leftBack");
+    private final NextMotor frontRight = new NextMotor("rightFront");
+    private final NextMotor backRight = new NextMotor("rightBack");
 
     private final NextIMU imu = new NextIMU("imu");
 

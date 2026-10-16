@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode.opmodes;
 
 import com.pedropathing.ivy.Scheduler;
 import com.pedropathing.ivy.commands.Commands;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import dev.nextftc.robot.opmode.NextOpMode;
 import dev.nextftc.robot.opmode.NextTeleop;
@@ -12,7 +11,8 @@ import org.firstinspires.ftc.teamcode.Sator;
 /**
  * Main TeleOp mode for Sator robot using NextFTC framework.
  */
-@NextTeleop(name = "Main TeleOp")
+
+@NextTeleop(name = "Main TeleOp", group = "TeleOp")
 public class MainTeleOp extends NextOpMode {
 
     private final Sator robot;
@@ -44,12 +44,21 @@ public class MainTeleOp extends NextOpMode {
         driver.rightTrigger().isOver(0.5).onTrue(
                 robot.intake.toggleCommand()
         );
+
+        driver.leftTrigger().isOver(0.5).onTrue(
+                robot.transfer.toggleCommand()
+        );
+
+        driver.leftBumper().onTrue(
+                robot.turret.toggleCommand()
+        );
     }
 
     @Override
     public void periodic() {
         telemetry.addData("Heading (rad)", robot.drivetrain.getHeading());
         telemetry.addData("Intake State", robot.intake.getState());
+        telemetry.addData("Transfer State", robot.transfer.getState());
         telemetry.update();
     }
 }
