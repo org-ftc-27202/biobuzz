@@ -8,17 +8,15 @@ import dev.nextftc.robot.Mechanism;
 
 import java.util.function.DoubleSupplier;
 
-/**
- * Mecanum Drivetrain mechanism using NextFTC hardware wrappers.
- */
 public class Drivetrain implements Mechanism {
-
     private final NextMotor frontLeft = new NextMotor("leftFront");
     private final NextMotor backLeft = new NextMotor("leftBack");
     private final NextMotor frontRight = new NextMotor("rightFront");
     private final NextMotor backRight = new NextMotor("rightBack");
-
     private final NextIMU imu = new NextIMU("imu");
+    private final double turnSpeed = 1.0;
+
+    // todo: convert to pedropath drive
 
     public Drivetrain() {
         frontRight.setDirection(NextMotor.Direction.REVERSE);
@@ -30,14 +28,10 @@ public class Drivetrain implements Mechanism {
         backRight.setZeroPowerBehavior(NextMotor.ZeroPowerBehavior.BRAKE);
     }
 
-    /**
-     * Drives the robot using mecanum kinematics.
-     *
-     * @param forward  Forward movement [-1.0, 1.0]
-     * @param strafe   Side-to-side movement [-1.0, 1.0]
-     * @param turn     Rotational movement [-1.0, 1.0]
-     */
+    // reference https://github.com/org-ftc-27202/FtcRobotController/blob/jeff/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/TwoDriverTeleOpJeff.java for mecanum drive
     public void drive(double forward, double strafe, double turn) {
+        turn *= turnSpeed;
+
         double fl = forward + strafe + turn;
         double bl = forward - strafe + turn;
         double fr = forward - strafe - turn;
@@ -51,37 +45,23 @@ public class Drivetrain implements Mechanism {
         backRight.setThrottle(br / max);
     }
 
-    /**
-     * Stops all drive motors.
-     */
     public void stop() {
         drive(0, 0, 0);
     }
 
-    /**
-     * Returns a command to drive using the given joystick input suppliers.
-     */
     public Command driveCommand(DoubleSupplier forward, DoubleSupplier strafe, DoubleSupplier turn) {
         return Commands.infinite(() -> drive(forward.getAsDouble(), strafe.getAsDouble(), turn.getAsDouble()))
                 .setEnd(endCondition -> stop());
     }
 
-    /**
-     * Resets the IMU yaw heading.
-     */
     public void resetHeading() {
         imu.resetYaw();
     }
 
-    /**
-     * Gets the current IMU heading in radians.
-     */
     public double getHeading() {
         return imu.getYaw();
     }
 
     @Override
-    public void periodic() {
-
-    }
+    public void periodic() {}
 }

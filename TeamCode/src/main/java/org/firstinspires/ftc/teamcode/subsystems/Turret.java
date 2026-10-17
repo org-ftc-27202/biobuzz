@@ -2,21 +2,20 @@ package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.pedropathing.ivy.Command;
 import com.pedropathing.ivy.commands.Commands;
+
+import dev.nextftc.hardware.actuators.NextCRServo;
 import dev.nextftc.hardware.actuators.NextMotor;
 import dev.nextftc.hardware.actuators.NextServo;
 import dev.nextftc.robot.Mechanism;
 
-/**
- * Intake subsystem using NextFTC hardware wrappers.
- */
 public class Turret implements Mechanism {
-
-    private final NextMotor motor = new NextMotor("turret");
-
+    private final NextMotor turretWheel = new NextMotor("turret");
     private final NextServo turretRotation = new NextServo("turretRotation");
     private final NextServo ballStopper = new NextServo("ballStopper");
+    private final NextCRServo transferWheel = new NextCRServo("transferWheel");
 
     public enum State {
+        OFF(0.0, 0.675),
         ON(1.0, 0.675),
         SHOOT(1.0, 0.535);
 
@@ -29,15 +28,17 @@ public class Turret implements Mechanism {
         }
     }
 
-    private State currentState = State.ON;
+    private State currentState = State.OFF;
 
     public Turret() {
-        motor.setZeroPowerBehavior(NextMotor.ZeroPowerBehavior.BRAKE);
-        motor.setDirection(NextMotor.Direction.REVERSE);
+        turretWheel.setZeroPowerBehavior(NextMotor.ZeroPowerBehavior.BRAKE);
+        turretWheel.setDirection(NextMotor.Direction.REVERSE);
+        transferWheel.setDirection(NextMotor.Direction.REVERSE);
     }
 
     public void setPower(double power) {
-        motor.setThrottle(power);
+        turretWheel.setThrottle(power);
+        transferWheel.setPower(power);
     }
 
     public void setCover(double positon) {
@@ -56,21 +57,26 @@ public class Turret implements Mechanism {
 
     public void toggle() {
         switch (currentState) {
+            case OFF:
+			case SHOOT:
+				setState(State.ON);
+                break;
             case ON:
                 setState(State.SHOOT);
                 break;
-            case SHOOT:
-                setState(State.ON);
-                break;
-        }
+		}
     }
 
+    public Command setStateCommand(State state) {
+        return Commands.instant(() -> setState(state));
+    }
     public Command toggleCommand() {
         return Commands.instant(this::toggle);
     }
 
     @Override
     public void periodic() {
-        motor.setThrottle(currentState.power);
+        turretWheel.setThrottle(currentState.power);
+        transferWheel.setPower(currentState.power);
     }
 }

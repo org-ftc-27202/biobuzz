@@ -3,15 +3,11 @@ package org.firstinspires.ftc.teamcode.subsystems;
 import com.pedropathing.ivy.Command;
 import com.pedropathing.ivy.commands.Commands;
 
-import dev.nextftc.hardware.actuators.NextCRServo;
 import dev.nextftc.hardware.actuators.NextMotor;
-import dev.nextftc.hardware.actuators.NextServo;
 import dev.nextftc.robot.Mechanism;
 
 public class Transfer implements Mechanism {
-
-    private final NextMotor motor = new NextMotor("transfer");
-    private final NextCRServo servo = new NextCRServo("transferWheel");
+    private final NextMotor transfer = new NextMotor("transfer");
 
     public enum State {
         OFF(0.0),
@@ -28,13 +24,12 @@ public class Transfer implements Mechanism {
     private State currentState = State.OFF;
 
     public Transfer() {
-        motor.setZeroPowerBehavior(NextMotor.ZeroPowerBehavior.BRAKE);
-        servo.setDirection(NextMotor.Direction.REVERSE);
+        transfer.setZeroPowerBehavior(NextMotor.ZeroPowerBehavior.BRAKE);
     }
 
     public void setPower(double power) {
-        motor.setThrottle(power);
-        servo.setPower(power);
+        transfer.setThrottle(power);
+
     }
 
     public void setState(State state) {
@@ -49,24 +44,24 @@ public class Transfer implements Mechanism {
     public void toggle() {
         switch (currentState) {
             case OFF:
-                setState(State.FORWARDS);
+			case BACKWARDS:
+				setState(State.FORWARDS);
                 break;
             case FORWARDS:
                 setState(State.BACKWARDS);
                 break;
-            case BACKWARDS:
-                setState(State.OFF);
-                break;
-        }
+		}
     }
 
+    public Command setStateCommand(State state) {
+        return Commands.instant(() -> setState(state));
+    }
     public Command toggleCommand() {
         return Commands.instant(this::toggle);
     }
 
     @Override
     public void periodic() {
-        motor.setThrottle(currentState.power);
-        servo.setPower(currentState.power);
+        transfer.setThrottle(currentState.power);
     }
 }

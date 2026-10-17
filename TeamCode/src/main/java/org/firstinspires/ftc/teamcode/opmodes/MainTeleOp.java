@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opmodes;
 
+import static com.pedropathing.ivy.groups.Groups.parallel;
+
 import com.pedropathing.ivy.Scheduler;
 import com.pedropathing.ivy.commands.Commands;
 
@@ -7,6 +9,9 @@ import dev.nextftc.robot.opmode.NextOpMode;
 import dev.nextftc.robot.opmode.NextTeleop;
 import dev.nextftc.robot.triggers.CommandGamepad;
 import org.firstinspires.ftc.teamcode.Sator;
+import org.firstinspires.ftc.teamcode.subsystems.Intake;
+import org.firstinspires.ftc.teamcode.subsystems.Transfer;
+import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
 /**
  * Main TeleOp mode for Sator robot using NextFTC framework.
@@ -26,7 +31,7 @@ public class MainTeleOp extends NextOpMode {
     public void start() {
         CommandGamepad driver = new CommandGamepad(gamepad1);
 
-        // Schedule driving command continuously using gamepad joysticks
+        // schedule driving command continuously using gamepad joysticks
         Scheduler.schedule(
                 robot.drivetrain.driveCommand(
                         () -> -driver.leftStickY().getValue(),
@@ -35,22 +40,44 @@ public class MainTeleOp extends NextOpMode {
                 )
         );
 
-        // Bind 'A' button to reset IMU heading
+        // bind 'A' button to reset IMU heading
         driver.a().onTrue(
                 Commands.instant(robot.drivetrain::resetHeading)
         );
 
-        // Bind right trigger (when pressed > 0.5) to toggle intake (OFF -> FORWARDS -> BACKWARDS -> OFF)
+        // intake and transfer OFF -> FORWARDS -> BACKWARDS -> FORWARDS -> etc.
         driver.rightTrigger().isOver(0.5).onTrue(
-                robot.intake.toggleCommand()
+                parallel(
+                        robot.intake.toggleCommand(),
+                        robot.transfer.toggleCommand()
+                )
         );
 
-        driver.leftTrigger().isOver(0.5).onTrue(
-                robot.transfer.toggleCommand()
-        );
-
+        // shoot!
         driver.leftBumper().onTrue(
-                robot.turret.toggleCommand()
+                parallel(
+                        robot.turret.setStateCommand(Turret.State.SHOOT),
+                        robot.transfer.setStateCommand(Transfer.State.FORWARDS),
+                        robot.intake.setStateCommand(Intake.State.FORWARDS)
+                )
+        );
+
+        // stop shooting!
+        driver.leftBumper().onFalse(
+                parallel(
+                        robot.turret.setStateCommand(Turret.State.ON),
+                        robot.transfer.setStateCommand(Transfer.State.FORWARDS),
+                        robot.intake.setStateCommand(Intake.State.FORWARDS)
+                )
+        );
+
+        // turn off turret, transfer, and intake
+        driver.dpadDown().onTrue(
+                parallel(
+                        robot.turret.setStateCommand(Turret.State.OFF),
+                        robot.transfer.setStateCommand(Transfer.State.OFF),
+                        robot.intake.setStateCommand(Intake.State.OFF)
+                )
         );
     }
 

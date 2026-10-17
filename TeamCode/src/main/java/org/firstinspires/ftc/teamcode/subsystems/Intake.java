@@ -5,12 +5,8 @@ import com.pedropathing.ivy.commands.Commands;
 import dev.nextftc.hardware.actuators.NextMotor;
 import dev.nextftc.robot.Mechanism;
 
-/**
- * Intake subsystem using NextFTC hardware wrappers.
- */
 public class Intake implements Mechanism {
-
-    private final NextMotor motor = new NextMotor("intake");
+    private final NextMotor intake = new NextMotor("intake");
 
     public enum State {
         OFF(0.0),
@@ -27,11 +23,11 @@ public class Intake implements Mechanism {
     private State currentState = State.OFF;
 
     public Intake() {
-        motor.setZeroPowerBehavior(NextMotor.ZeroPowerBehavior.BRAKE);
+        intake.setZeroPowerBehavior(NextMotor.ZeroPowerBehavior.BRAKE);
     }
 
     public void setPower(double power) {
-        motor.setThrottle(power);
+        intake.setThrottle(power);
     }
 
     public void setState(State state) {
@@ -46,23 +42,24 @@ public class Intake implements Mechanism {
     public void toggle() {
         switch (currentState) {
             case OFF:
-                setState(State.FORWARDS);
+			case BACKWARDS:
+				setState(State.FORWARDS);
                 break;
             case FORWARDS:
                 setState(State.BACKWARDS);
                 break;
-            case BACKWARDS:
-                setState(State.OFF);
-                break;
-        }
+		}
     }
 
+    public Command setStateCommand(State state) {
+        return Commands.instant(() -> setState(state));
+    }
     public Command toggleCommand() {
         return Commands.instant(this::toggle);
     }
 
     @Override
     public void periodic() {
-        motor.setThrottle(currentState.power);
+        intake.setThrottle(currentState.power);
     }
 }
