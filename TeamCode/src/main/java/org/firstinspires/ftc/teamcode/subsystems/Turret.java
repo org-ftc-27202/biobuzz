@@ -19,11 +19,11 @@ public class Turret implements Mechanism {
         ON(1.0, 0.675),
         SHOOT(1.0, 0.535);
 
-        private final double power, hoodPos;
+        private final double power, ballStopperPos;
 
         State(double power, double hoodPos) {
             this.power = power;
-            this.hoodPos = hoodPos;
+            this.ballStopperPos = hoodPos;
         }
     }
 
@@ -40,14 +40,14 @@ public class Turret implements Mechanism {
         transferWheel.setPower(power);
     }
 
-    public void setCover(double positon) {
+    public void setBallStopperServo(double positon) {
         ballStopper.setPosition(positon);
     }
 
     public void setState(State state) {
         this.currentState = state;
         setPower(state.power);
-        setCover(state.hoodPos);
+        setBallStopperServo(state.ballStopperPos);
     }
 
     public State getState() {
