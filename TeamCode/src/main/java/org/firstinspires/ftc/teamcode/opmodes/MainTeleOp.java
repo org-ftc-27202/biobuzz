@@ -17,7 +17,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Turret;
  * Main TeleOp mode for Sator robot using NextFTC framework.
  */
 
-@NextTeleop(name = "Main TeleOp", group = "TeleOp")
+@NextTeleop(name = "Main TeleOp 10/17", group = "TeleOp")
 public class MainTeleOp extends NextOpMode {
 
     private final Sator robot;

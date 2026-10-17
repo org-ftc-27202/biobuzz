@@ -19,8 +19,8 @@ public class Drivetrain implements Mechanism {
     // todo: convert to pedropath drive
 
     public Drivetrain() {
-        frontRight.setDirection(NextMotor.Direction.REVERSE);
-        backRight.setDirection(NextMotor.Direction.REVERSE);
+        frontLeft.setDirection(NextMotor.Direction.REVERSE);
+        backLeft.setDirection(NextMotor.Direction.REVERSE);
 
         frontLeft.setZeroPowerBehavior(NextMotor.ZeroPowerBehavior.BRAKE);
         backLeft.setZeroPowerBehavior(NextMotor.ZeroPowerBehavior.BRAKE);
