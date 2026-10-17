@@ -66,7 +66,7 @@ public class Turret implements Mechanism {
     private double nudgeDeg = 0.0;
     private boolean safetyStopped = false;
 
-    // encoder tracking; revolutions carry over between runs because the robot object is reused
+    // encoder tracking; revolutions are re-picked at the start of every run (see updateEncoder)
     private boolean encoderStarted = false;
     private double lastEncoderDeg = 0.0;
     private int revolutions = 0;
@@ -105,16 +105,15 @@ public class Turret implements Mechanism {
         turretRotation.setDirection(ROTATION_REVERSED ? NextMotor.Direction.REVERSE : NextMotor.Direction.FORWARD);
 
         safetyStopped = false;
-        encoderStarted = false; // re-read the encoder before counting wraps again
+        encoderStarted = false; // re-read the encoder and re-pick revolutions
         integralSum = 0.0;
         lastError = 0.0;
         lastPower = 0.0;
         pidTimer.reset();
     }
 
-    // call at the start of auto, with the turret pointing forward
+    // call at the start of auto, with the turret pointing roughly forward
     public void resetRevolutions() {
-        revolutions = 0;
         encoderStarted = false;
     }
 
@@ -200,6 +199,12 @@ public class Turret implements Mechanism {
         double encoderDeg = voltageToDegrees(externalEncoder.getValue() * ANALOG_MAX_VOLTS);
 
         if (!encoderStarted) {
+            // one encoder turn is only ~205 turret degrees, so the start angle is ambiguous.
+            // assume the turret starts within ~100 deg of forward and pick the turn closest to forward.
+            double turretDegPerEncoderTurn = 360.0 * PULLEY_RATIO;
+            double startDeg = encoderDeg * PULLEY_RATIO - TURRET_ZERO_DEG;
+            revolutions = (int) Math.round(-startDeg / turretDegPerEncoderTurn);
+
             lastEncoderDeg = encoderDeg;
             encoderStarted = true;
         }
