@@ -19,8 +19,7 @@ public class Turret implements Mechanism {
         ON(1.0, 0.675),
         SHOOT(1.0, 0.535);
 
-        public final double power;
-        public final double hoodPos;
+        private final double power, hoodPos;
 
         State(double power, double hoodPos) {
             this.power = power;

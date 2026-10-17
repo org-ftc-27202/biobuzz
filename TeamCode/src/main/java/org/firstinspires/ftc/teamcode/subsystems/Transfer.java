@@ -14,7 +14,7 @@ public class Transfer implements Mechanism {
         FORWARDS(1.0),
         BACKWARDS(-1.0);
 
-        public final double power;
+        private final double power;
 
         State(double power) {
             this.power = power;

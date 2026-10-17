@@ -86,6 +86,7 @@ public class MainTeleOp extends NextOpMode {
         telemetry.addData("Heading (rad)", robot.drivetrain.getHeading());
         telemetry.addData("Intake State", robot.intake.getState());
         telemetry.addData("Transfer State", robot.transfer.getState());
+        telemetry.addData("Turret State", robot.turret.getState());
         telemetry.update();
     }
 }
