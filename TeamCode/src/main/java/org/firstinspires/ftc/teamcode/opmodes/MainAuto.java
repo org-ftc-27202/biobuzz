@@ -25,6 +25,18 @@ public class MainAuto extends NextOpMode {
 
     @Override
     public void start() {
+        // robot object is reused across runs, so re-apply hardware setup every run
+        robot.odometry.configure();
+        robot.turret.configure();
+
+        // where the robot starts, in Pedro coordinates (decode endurancebot values)
+        // blue short: 30, 136, 0 deg     red short: 114, 136, 180 deg
+        // blue far: 55.25, 9, 90 deg     red far:   88.75, 9, 90 deg
+        robot.odometry.setPose(30.0, 136.0, Math.toRadians(0));
+
+        // turret must be pointing straight forward when auto starts
+        robot.turret.resetRevolutions();
+
         // Schedule an autonomous command sequence using Groups and Commands
         Scheduler.schedule(
                 Groups.sequential(

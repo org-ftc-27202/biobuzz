@@ -4,6 +4,7 @@ import dev.frozenmilk.sinister.loading.Pinned;
 import dev.nextftc.robot.Mechanism;
 import dev.nextftc.robot.NextRobot;
 
+import org.firstinspires.ftc.teamcode.subsystems.Odometry;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 import org.jetbrains.annotations.NotNull;
@@ -20,6 +21,7 @@ import java.util.Set;
 @Pinned()
 public class Sator implements NextRobot {
 
+    public final Odometry odometry;
     public final Drivetrain drivetrain;
     public final Intake intake;
     public final Transfer transfer;
@@ -28,10 +30,11 @@ public class Sator implements NextRobot {
 
 
     public Sator() {
+        odometry = new Odometry();
         drivetrain = new Drivetrain();
         intake = new Intake();
         transfer = new Transfer();
-        turret = new Turret();
+        turret = new Turret(odometry);
 
         Set<Mechanism> mechanismSet = new HashSet<>();
         mechanismSet.add(drivetrain);
@@ -53,8 +56,9 @@ public class Sator implements NextRobot {
         return mechanisms;
     }
 
+    // runs before every mechanism's periodic, so the turret always aims with a fresh pose
     @Override
     public void periodic() {
-
+        odometry.update();
     }
 }
