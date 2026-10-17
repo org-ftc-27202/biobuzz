@@ -30,6 +30,10 @@ public class Turret implements Mechanism {
     private State currentState = State.OFF;
 
     public Turret() {
+
+    }
+
+    public void configure() {
         turretWheel.setZeroPowerBehavior(NextMotor.ZeroPowerBehavior.BRAKE);
         turretWheel.setDirection(NextMotor.Direction.REVERSE);
         transferWheel.setDirection(NextMotor.Direction.REVERSE);

@@ -29,6 +29,11 @@ public class MainTeleOp extends NextOpMode {
 
     @Override
     public void start() {
+        robot.drivetrain.configure();
+        robot.intake.configure();
+        robot.transfer.configure();
+        robot.turret.configure();
+
         CommandGamepad driver = new CommandGamepad(gamepad1);
 
         // schedule driving command continuously using gamepad joysticks

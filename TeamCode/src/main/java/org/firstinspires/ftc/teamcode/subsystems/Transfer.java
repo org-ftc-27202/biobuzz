@@ -24,6 +24,10 @@ public class Transfer implements Mechanism {
     private State currentState = State.OFF;
 
     public Transfer() {
+
+    }
+
+    public void configure() {
         transfer.setZeroPowerBehavior(NextMotor.ZeroPowerBehavior.BRAKE);
     }
 
