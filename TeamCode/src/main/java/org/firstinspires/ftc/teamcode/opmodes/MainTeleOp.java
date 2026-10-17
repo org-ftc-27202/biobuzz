@@ -132,6 +132,9 @@ public class MainTeleOp extends NextOpMode {
         telemetry.addData("Distance To Goal (in)", "%.1f", robot.turret.getDistanceToGoal());
         telemetry.addData("Turret Deg / Target", "%.1f / %.1f",
                 robot.turret.getTurretDegrees(), robot.turret.getTargetDegrees());
+        if (robot.turret.isSafetyStopped()) {
+            telemetry.addLine("TURRET SAFETY STOP - turret went past its limits, restart OpMode");
+        }
         telemetry.addData("Intake State", robot.intake.getState());
         telemetry.addData("Transfer State", robot.transfer.getState());
         telemetry.addData("Turret State", robot.turret.getState());

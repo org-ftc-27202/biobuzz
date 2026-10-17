@@ -40,6 +40,12 @@ public class Turret implements Mechanism {
     private static final double LEFT_BOUND = -100.0;
     private static final double RIGHT_BOUND = 160.0;
 
+    // Sator's rotation servo spins the opposite way from endurance's; set false if the turret runs away again
+    private static final boolean ROTATION_REVERSED = true;
+
+    // if the turret ends up this far past a bound, stop it until the next run (wrong direction or bad encoder)
+    private static final double SAFETY_MARGIN_DEG = 30.0;
+
     // yaw PID
     private static final double KP = 0.01;
     private static final double KI = 0.005;
@@ -58,6 +64,7 @@ public class Turret implements Mechanism {
     private boolean targetInRange = true;
     private double distanceToGoal = 0.0;
     private double nudgeDeg = 0.0;
+    private boolean safetyStopped = false;
 
     // encoder tracking; revolutions carry over between runs because the robot object is reused
     private boolean encoderStarted = false;
@@ -95,7 +102,9 @@ public class Turret implements Mechanism {
         turretWheel.setZeroPowerBehavior(NextMotor.ZeroPowerBehavior.BRAKE);
         turretWheel.setDirection(NextMotor.Direction.REVERSE);
         transferWheel.setDirection(NextMotor.Direction.REVERSE);
+        turretRotation.setDirection(ROTATION_REVERSED ? NextMotor.Direction.REVERSE : NextMotor.Direction.FORWARD);
 
+        safetyStopped = false;
         encoderStarted = false; // re-read the encoder before counting wraps again
         integralSum = 0.0;
         lastError = 0.0;
@@ -168,6 +177,10 @@ public class Turret implements Mechanism {
 
     public double getTargetDegrees() {
         return targetDeg;
+    }
+
+    public boolean isSafetyStopped() {
+        return safetyStopped;
     }
 
     public void nudgeRight() {
@@ -260,6 +273,16 @@ public class Turret implements Mechanism {
         transferWheel.setPower(currentState.power);
 
         updateEncoder();
+
+        if (turretDeg < LEFT_BOUND - SAFETY_MARGIN_DEG || turretDeg > RIGHT_BOUND + SAFETY_MARGIN_DEG) {
+            safetyStopped = true;
+        }
+        if (safetyStopped) {
+            lastPower = 0.0;
+            turretRotation.setPower(0.0);
+            return;
+        }
+
         targetDeg = aiming ? calculateTarget() : 0.0; // not aiming: face forward
         turretRotation.setPower(calculateYawPower(turretDeg - targetDeg));
     }
