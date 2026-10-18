@@ -18,7 +18,7 @@ import java.util.Set;
 /**
  * Main robot class for Biobuzz. Implements NextRobot for automatic scanner discovery.
  */
-@Pinned()
+
 public class Sator implements NextRobot {
 
     public final Odometry odometry;

@@ -28,7 +28,7 @@ public class Turret implements Mechanism {
 
     // hive position in Pedro field coordinates (inches): x = from left wall, y = from back wall.
     // same hive for both alliances
-    public static final double GOAL_X = 60.0, GOAL_Y = 57.0;
+    public static final double GOAL_X = 54.0, GOAL_Y = 57.0;
 
     // external encoder
     private static final double ANALOG_MAX_VOLTS = 3.3;
@@ -38,8 +38,8 @@ public class Turret implements Mechanism {
     public static final double TURRET_ZERO_DEG = 12.7; // todo: re-find with Turret Zero tuner
 
     // how far the turret may turn from forward (- = left, + = right)
-    public static final double LEFT_BOUND = -100.0;
-    public static final double RIGHT_BOUND = 160.0;
+    public static final double LEFT_BOUND = -88.6;
+    public static final double RIGHT_BOUND = 205.0;
 
     // Sator's rotation servo spins the opposite way from endurance's; set false if the turret runs away again
     public static final boolean ROTATION_REVERSED = false;
@@ -49,12 +49,12 @@ public class Turret implements Mechanism {
 
     // yaw PID
     private static final double KP = 0.01;
-    private static final double KI = 0.005;
+    private static final double KI = 0.000;
     private static final double KD = 0.001;
     private static final double MAX_INTEGRAL_SUM = 0.5;
     private static final double MIN_POWER = 0.006;
     private static final double TOLERANCE_DEG = 1.0;
-    private static final double MAX_POWER = 0.5;
+    private static final double MAX_POWER = 1.0;
     private static final double MAX_POWER_STEP = 0.3; // per loop
 
     private static final double NUDGE_DEG = 3.0;
@@ -68,8 +68,8 @@ public class Turret implements Mechanism {
     // STARTING GUESSES: decode's tuned curve (near = down, far = up) scaled onto Sator's hood range.
     // replace with real numbers: park at a distance, find the hood that scores in the tester, write it here.
     private static final double[][] HOOD_TABLE = {
-            {40.0, 0.855},
-            {60.0, 0.745},
+            {40.0, 0.750},
+            {60.0, 0.700},
             {70.0, 0.488},
             {80.0, 0.350},
             {90.0, 0.239},
