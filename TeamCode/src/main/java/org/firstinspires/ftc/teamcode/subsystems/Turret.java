@@ -34,14 +34,14 @@ public class Turret implements Mechanism {
     private static final double MIN_VOLTS = 0.015;
     private static final double MAX_VOLTS = 3.230;
     public static final double PULLEY_RATIO = 55.0 / 109.0; // turret degrees per encoder degree
-    public static final double TURRET_ZERO_DEG = 180.1; // todo: re-find with Turret Zero tuner
+    public static final double TURRET_ZERO_DEG = 12.7; // todo: re-find with Turret Zero tuner
 
     // how far the turret may turn from forward (- = left, + = right)
     public static final double LEFT_BOUND = -100.0;
     public static final double RIGHT_BOUND = 160.0;
 
     // Sator's rotation servo spins the opposite way from endurance's; set false if the turret runs away again
-    public static final boolean ROTATION_REVERSED = true;
+    public static final boolean ROTATION_REVERSED = false;
 
     // if the turret ends up this far past a bound, stop it until the next run (wrong direction or bad encoder)
     private static final double SAFETY_MARGIN_DEG = 30.0;
