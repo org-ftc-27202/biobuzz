@@ -25,9 +25,9 @@ public class Turret implements Mechanism {
 
     // ---- aiming values, copied from decode endurancebot Turret ----
 
-    // goals in Pedro field coordinates (inches, 0-144)
-    public static final double BLUE_GOAL_X = 4.0, BLUE_GOAL_Y = 143.5;
-    public static final double RED_GOAL_X = 141.0, RED_GOAL_Y = 142.5;
+    // hive position in Pedro field coordinates (inches): x = from left wall, y = from back wall.
+    // same hive for both alliances
+    public static final double GOAL_X = 60.0, GOAL_Y = 57.0;
 
     // external encoder
     private static final double ANALOG_MAX_VOLTS = 3.3;
@@ -58,8 +58,8 @@ public class Turret implements Mechanism {
 
     private static final double NUDGE_DEG = 3.0;
 
-    private double goalX = BLUE_GOAL_X;
-    private double goalY = BLUE_GOAL_Y;
+    private double goalX = GOAL_X;
+    private double goalY = GOAL_Y;
     private boolean aiming = false;
     private boolean targetInRange = true;
     private double distanceToGoal = 0.0;

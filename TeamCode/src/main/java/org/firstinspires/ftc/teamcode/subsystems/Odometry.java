@@ -13,11 +13,11 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
  * Uses Pedro field coordinates like decode: inches 0-144, heading in radians, 0 = +x.
  */
 public class Odometry {
-    // config name and pod setup copied from decode endurancebot pedroPathing/Constants
+    // config name and pod setup copied from Sator's tuned pedro/Constants localizerConfig
     public static final String PINPOINT_NAME = "computer";
     private final NextPinpoint pinpoint = new NextPinpoint(PINPOINT_NAME);
-    private static final double FORWARD_POD_Y = -3.1; // inches (Pedro forwardPodY)
-    private static final double STRAFE_POD_X = -5.7;  // inches (Pedro strafePodX)
+    private static final double FORWARD_POD_Y = -3.1236324160117803; // inches (Pedro xPodOffset)
+    private static final double STRAFE_POD_X = -0.35018875842957986; // inches (Pedro yPodOffset)
 
     private Pose2D pose = new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.RADIANS, 0);
     private boolean hasPose = false;

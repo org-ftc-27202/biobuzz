@@ -37,8 +37,8 @@ public class TurretZero extends LinearOpMode {
         Odometry.applyConfig(pinpoint);
         resetPose();
 
-        double goalX = MainTeleOp.RED_ALLIANCE ? Turret.RED_GOAL_X : Turret.BLUE_GOAL_X;
-        double goalY = MainTeleOp.RED_ALLIANCE ? Turret.RED_GOAL_Y : Turret.BLUE_GOAL_Y;
+        double goalX = Turret.GOAL_X;
+        double goalY = Turret.GOAL_Y;
 
         // turret must start roughly forward, same as the real code
         double lastEncoderDeg = readEncoderDegrees(externalEncoder);
@@ -100,11 +100,15 @@ public class TurretZero extends LinearOpMode {
             telemetry.addData("Current Limits", "%.1f / %.1f  (%s)",
                     Turret.LEFT_BOUND, Turret.RIGHT_BOUND, insideLimits ? "inside" : "OUTSIDE");
 
+            // this number doesn't change when you change TURRET_ZERO_DEG; Turret Deg reading ~0 at forward is the check
             telemetry.addLine("--- Zero ---");
-            telemetry.addData("New TURRET_ZERO_DEG", "%.1f  (when pointing straight forward)",
+            telemetry.addData("Put in TURRET_ZERO_DEG", "%.1f  (read with turret straight forward)",
                     encoderDeg * Turret.PULLEY_RATIO);
+            telemetry.addData("Zero Check", Math.abs(turretDeg) < 3.0
+                    ? "OK - Turret Deg is ~0, zero is set"
+                    : "if turret is straight forward, zero is NOT set yet");
 
-            telemetry.addLine("--- Goal (" + (MainTeleOp.RED_ALLIANCE ? "red" : "blue") + ") ---");
+            telemetry.addLine("--- Hive (start: " + (MainTeleOp.RED_ALLIANCE ? "red" : "blue") + ") ---");
             telemetry.addData("Robot X / Y / Heading", "%.1f / %.1f / %.1f deg", x, y, Math.toDegrees(heading));
             telemetry.addData("Game Goal Direction", "%.1f  (ignores limits)", goalDeg);
             telemetry.addData("Wants To Be (target)", "%.1f  (kept within limits)", targetDeg);

@@ -56,11 +56,7 @@ public class MainTeleOp extends NextOpMode {
             resetPose();
         }
 
-        if (RED_ALLIANCE) {
-            robot.turret.setGoal(Turret.RED_GOAL_X, Turret.RED_GOAL_Y);
-        } else {
-            robot.turret.setGoal(Turret.BLUE_GOAL_X, Turret.BLUE_GOAL_Y);
-        }
+        robot.turret.setGoal(Turret.GOAL_X, Turret.GOAL_Y);
 
         CommandGamepad driver = new CommandGamepad(gamepad1);
         CommandGamepad operator = new CommandGamepad(gamepad2);
