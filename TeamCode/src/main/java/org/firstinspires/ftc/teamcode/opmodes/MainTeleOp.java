@@ -21,11 +21,11 @@ import org.firstinspires.ftc.teamcode.subsystems.Turret;
 public class MainTeleOp extends NextOpMode {
 
     // todo: set before each match (or make a red and a blue TeleOp)
-    private static final boolean RED_ALLIANCE = false;
+    public static final boolean RED_ALLIANCE = false;
 
     // short-side start poses from decode endurancebot (Pedro coordinates); also the dpad-up reset spot
-    private static final double BLUE_RESET_X = 30.0, BLUE_RESET_Y = 136.0, BLUE_RESET_HEADING_DEG = 0.0;
-    private static final double RED_RESET_X = 114.0, RED_RESET_Y = 136.0, RED_RESET_HEADING_DEG = 180.0;
+    public static final double BLUE_RESET_X = 30.0, BLUE_RESET_Y = 136.0, BLUE_RESET_HEADING_DEG = 0.0;
+    public static final double RED_RESET_X = 114.0, RED_RESET_Y = 136.0, RED_RESET_HEADING_DEG = 180.0;
 
     private final Sator robot;
 

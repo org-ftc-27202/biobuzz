@@ -37,11 +37,11 @@ public class Turret implements Mechanism {
     public static final double TURRET_ZERO_DEG = 30.0; // todo: re-find with Turret Zero tuner
 
     // how far the turret may turn from forward (- = left, + = right)
-    private static final double LEFT_BOUND = -100.0;
-    private static final double RIGHT_BOUND = 160.0;
+    public static final double LEFT_BOUND = -100.0;
+    public static final double RIGHT_BOUND = 160.0;
 
     // Sator's rotation servo spins the opposite way from endurance's; set false if the turret runs away again
-    private static final boolean ROTATION_REVERSED = true;
+    public static final boolean ROTATION_REVERSED = true;
 
     // if the turret ends up this far past a bound, stop it until the next run (wrong direction or bad encoder)
     private static final double SAFETY_MARGIN_DEG = 30.0;
@@ -194,17 +194,30 @@ public class Turret implements Mechanism {
         return ((voltage - MIN_VOLTS) / (MAX_VOLTS - MIN_VOLTS)) * 360.0;
     }
 
+    // one encoder turn is less than one turret turn, so the start angle is ambiguous.
+    // assume the turret starts within half an encoder turn of forward and pick the turn closest to forward.
+    public static int startingRevolutions(double encoderDeg) {
+        double turretDegPerEncoderTurn = 360.0 * PULLEY_RATIO;
+        double startDeg = encoderDeg * PULLEY_RATIO - TURRET_ZERO_DEG;
+        return (int) Math.round(-startDeg / turretDegPerEncoderTurn);
+    }
+
+    public static double encoderToTurretDegrees(double encoderDeg, int revolutions) {
+        return (encoderDeg + revolutions * 360.0) * PULLEY_RATIO - TURRET_ZERO_DEG;
+    }
+
+    // direction of the goal relative to the robot's front, -180 to 180 (+ = right), ignoring the bounds
+    public static double goalAngle(double robotX, double robotY, double headingRad, double goalX, double goalY) {
+        double angleToGoal = Math.toDegrees(Math.atan2(goalY - robotY, goalX - robotX));
+        return AngleUnit.normalizeDegrees(Math.toDegrees(headingRad) - angleToGoal);
+    }
+
     // the encoder spins more than once per turret turn, so count each time it wraps past 360
     private void updateEncoder() {
         double encoderDeg = voltageToDegrees(externalEncoder.getValue() * ANALOG_MAX_VOLTS);
 
         if (!encoderStarted) {
-            // one encoder turn is only ~205 turret degrees, so the start angle is ambiguous.
-            // assume the turret starts within ~100 deg of forward and pick the turn closest to forward.
-            double turretDegPerEncoderTurn = 360.0 * PULLEY_RATIO;
-            double startDeg = encoderDeg * PULLEY_RATIO - TURRET_ZERO_DEG;
-            revolutions = (int) Math.round(-startDeg / turretDegPerEncoderTurn);
-
+            revolutions = startingRevolutions(encoderDeg);
             lastEncoderDeg = encoderDeg;
             encoderStarted = true;
         }
@@ -217,7 +230,7 @@ public class Turret implements Mechanism {
         }
         lastEncoderDeg = encoderDeg;
 
-        turretDeg = (encoderDeg + revolutions * 360.0) * PULLEY_RATIO - TURRET_ZERO_DEG - nudgeDeg;
+        turretDeg = encoderToTurretDegrees(encoderDeg, revolutions) - nudgeDeg;
     }
 
     // angle the turret should point, relative to the robot's front (+ = right)
@@ -226,8 +239,7 @@ public class Turret implements Mechanism {
         double y = odometry.getY();
         distanceToGoal = Math.hypot(goalX - x, goalY - y);
 
-        double angleToGoal = Math.toDegrees(Math.atan2(goalY - y, goalX - x));
-        double target = AngleUnit.normalizeDegrees(Math.toDegrees(odometry.getHeading()) - angleToGoal);
+        double target = goalAngle(x, y, odometry.getHeading(), goalX, goalY);
 
         targetInRange = target >= LEFT_BOUND && target <= RIGHT_BOUND;
         return Range.clip(target, LEFT_BOUND, RIGHT_BOUND);

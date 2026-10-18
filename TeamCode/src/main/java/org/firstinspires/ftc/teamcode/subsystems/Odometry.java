@@ -14,7 +14,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
  */
 public class Odometry {
     // config name and pod setup copied from decode endurancebot pedroPathing/Constants
-    private final NextPinpoint pinpoint = new NextPinpoint("computer");
+    public static final String PINPOINT_NAME = "computer";
+    private final NextPinpoint pinpoint = new NextPinpoint(PINPOINT_NAME);
     private static final double FORWARD_POD_Y = -3.1; // inches (Pedro forwardPodY)
     private static final double STRAFE_POD_X = -5.7;  // inches (Pedro strafePodX)
 
@@ -23,7 +24,11 @@ public class Odometry {
 
     // call at the start of every run (robot object is reused across runs)
     public void configure() {
-        GoBildaPinpointDriver device = pinpoint.getDevice();
+        applyConfig(pinpoint.getDevice());
+    }
+
+    // shared with test OpModes that use the Pinpoint directly
+    public static void applyConfig(GoBildaPinpointDriver device) {
         // same order Pedro uses: forwardPodY, strafePodX
         device.setOffsets(FORWARD_POD_Y, STRAFE_POD_X, DistanceUnit.INCH);
         device.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
