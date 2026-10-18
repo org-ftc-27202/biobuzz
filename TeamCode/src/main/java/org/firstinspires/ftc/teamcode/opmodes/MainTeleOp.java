@@ -45,6 +45,9 @@ public class MainTeleOp extends NextOpMode {
     @Override
     public void start() {
         // robot object is reused across runs, so re-apply hardware setup every run
+        robot.drivetrain.configure();
+        robot.intake.configure();
+        robot.transfer.configure();
         robot.odometry.configure();
         robot.turret.configure();
 

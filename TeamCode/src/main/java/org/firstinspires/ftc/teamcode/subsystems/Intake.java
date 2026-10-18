@@ -23,6 +23,10 @@ public class Intake implements Mechanism {
     private State currentState = State.OFF;
 
     public Intake() {
+
+    }
+
+    public void configure() {
         intake.setZeroPowerBehavior(NextMotor.ZeroPowerBehavior.BRAKE);
     }
 

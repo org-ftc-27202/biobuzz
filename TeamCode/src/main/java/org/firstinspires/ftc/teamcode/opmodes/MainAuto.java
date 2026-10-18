@@ -26,13 +26,20 @@ public class MainAuto extends NextOpMode {
     @Override
     public void start() {
         // robot object is reused across runs, so re-apply hardware setup every run
+        robot.drivetrain.configure();
+        robot.intake.configure();
+        robot.transfer.configure();
         robot.odometry.configure();
         robot.turret.configure();
 
-        // where the robot starts, in Pedro coordinates (decode endurancebot values)
-        // blue short: 30, 136, 0 deg     red short: 114, 136, 180 deg
-        // blue far: 55.25, 9, 90 deg     red far:   88.75, 9, 90 deg
-        robot.odometry.setPose(30.0, 136.0, Math.toRadians(0));
+        // where the robot starts: same spot as the TeleOp reset (back against the back wall)
+        if (MainTeleOp.RED_ALLIANCE) {
+            robot.odometry.setPose(MainTeleOp.RED_RESET_X, MainTeleOp.RED_RESET_Y,
+                    Math.toRadians(MainTeleOp.RED_RESET_HEADING_DEG));
+        } else {
+            robot.odometry.setPose(MainTeleOp.BLUE_RESET_X, MainTeleOp.BLUE_RESET_Y,
+                    Math.toRadians(MainTeleOp.BLUE_RESET_HEADING_DEG));
+        }
 
         // turret must be pointing straight forward when auto starts
         robot.turret.resetRevolutions();
