@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -31,6 +32,8 @@ public class TurretZero extends LinearOpMode {
     public void runOpMode() {
         AnalogInput externalEncoder = hardwareMap.get(AnalogInput.class, "externalEncoder");
         CRServo turretRotation = hardwareMap.get(CRServo.class, "turretRotation");
+        Servo hood = hardwareMap.get(Servo.class, "turretHood");
+        double hoodPos = Turret.HOOD_DOWN;
         turretRotation.setDirection(Turret.ROTATION_REVERSED ? DcMotorSimple.Direction.REVERSE : DcMotorSimple.Direction.FORWARD);
 
         pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, Odometry.PINPOINT_NAME);
@@ -68,6 +71,12 @@ public class TurretZero extends LinearOpMode {
                 // positive servo power turns the turret toward negative degrees, so stick right = turret right
                 turretRotation.setPower(-gamepad1.left_stick_x * MAX_MANUAL_POWER);
 
+                // right stick up = raise hood (smaller servo number)
+                hoodPos += 0.003 * gamepad1.right_stick_y;
+                hoodPos = Range.clip(hoodPos, Math.min(Turret.HOOD_UP, Turret.HOOD_DOWN),
+                        Math.max(Turret.HOOD_UP, Turret.HOOD_DOWN));
+                hood.setPosition(hoodPos);
+
                 if (gamepad1.a) {
                     minDeg = turretDeg;
                     maxDeg = turretDeg;
@@ -91,7 +100,7 @@ public class TurretZero extends LinearOpMode {
 
             // ---- telemetry ----
             telemetry.addLine(opModeIsActive()
-                    ? "Left stick: turn turret (NO LIMITS)  |  A: reset min/max  |  Dpad up: reset pose"
+                    ? "Left stick: turn turret (NO LIMITS)  |  Right stick: hood  |  A: reset min/max  |  Dpad up: reset pose"
                     : "Point turret roughly forward, then press START");
 
             telemetry.addLine("--- Turret (+ = right) ---");
@@ -114,6 +123,12 @@ public class TurretZero extends LinearOpMode {
             telemetry.addData("Wants To Be (target)", "%.1f  (kept within limits)", targetDeg);
             telemetry.addData("Off From Goal", "%.1f  (+ = turret right of goal)", turretDeg - goalDeg);
             telemetry.addData("Off From Target", "%.1f", turretDeg - targetDeg);
+
+            double distance = Math.hypot(goalX - x, goalY - y);
+            telemetry.addLine("--- Hood (find the hood that scores, write {distance, hood} into HOOD_TABLE) ---");
+            telemetry.addData("Distance To Hive (in)", "%.1f", distance);
+            telemetry.addData("Hood Now", "%.3f", hoodPos);
+            telemetry.addData("HOOD_TABLE Says", "%.3f", Turret.hoodForDistance(distance));
 
             telemetry.addLine("--- Raw ---");
             telemetry.addData("Encoder Voltage / Deg / Laps", "%.3f / %.1f / %d",

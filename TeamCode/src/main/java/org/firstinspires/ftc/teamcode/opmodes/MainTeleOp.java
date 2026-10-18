@@ -85,6 +85,10 @@ public class MainTeleOp extends NextOpMode {
         operator.dpadLeft().onTrue(Commands.instant(robot.turret::nudgeLeft));
         operator.dpadRight().onTrue(Commands.instant(robot.turret::nudgeRight));
 
+        // gamepad2 dpad up/down: nudge the hood if shots land short or long while auto-aiming
+        operator.dpadUp().onTrue(Commands.instant(robot.turret::hoodNudgeUp));
+        operator.dpadDown().onTrue(Commands.instant(robot.turret::hoodNudgeDown));
+
         // intake and transfer OFF -> FORWARDS -> BACKWARDS -> FORWARDS -> etc.
         driver.rightTrigger().isOver(0.5).onTrue(
                 parallel(
@@ -129,6 +133,7 @@ public class MainTeleOp extends NextOpMode {
         telemetry.addData("Auto-Aim", robot.turret.isAiming() ? "ON" : "off");
         telemetry.addData("Goal In Range", robot.turret.isTargetInRange() ? "yes" : "NO - turn robot");
         telemetry.addData("Distance To Goal (in)", "%.1f", robot.turret.getDistanceToGoal());
+        telemetry.addData("Hood Position", "%.3f", robot.turret.getHoodPosition());
         telemetry.addData("Turret Deg / Target", "%.1f / %.1f",
                 robot.turret.getTurretDegrees(), robot.turret.getTargetDegrees());
         if (robot.turret.isSafetyStopped()) {

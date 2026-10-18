@@ -20,6 +20,7 @@ public class Turret implements Mechanism {
     private final NextAnalogInput externalEncoder = new NextAnalogInput("externalEncoder");
     private final NextServo ballStopper = new NextServo("ballStopper");
     private final NextCRServo transferWheel = new NextCRServo("transferWheel");
+    private final NextServo hood = new NextServo("turretHood", 0.001);
 
     private final Odometry odometry;
 
@@ -58,12 +59,31 @@ public class Turret implements Mechanism {
 
     private static final double NUDGE_DEG = 3.0;
 
+    // ---- hood ----
+    public static final double HOOD_DOWN = 0.855; // fully down
+    public static final double HOOD_UP = 0.12;    // fully up
+    private static final double HOOD_NUDGE = 0.02;
+
+    // distance to hive (inches) -> hood position, used while auto-aim is on.
+    // STARTING GUESSES: decode's tuned curve (near = down, far = up) scaled onto Sator's hood range.
+    // replace with real numbers: park at a distance, find the hood that scores in the tester, write it here.
+    private static final double[][] HOOD_TABLE = {
+            {40.0, 0.855},
+            {60.0, 0.745},
+            {70.0, 0.488},
+            {80.0, 0.350},
+            {90.0, 0.239},
+            {100.0, 0.120},
+    };
+
     private double goalX = GOAL_X;
     private double goalY = GOAL_Y;
     private boolean aiming = false;
     private boolean targetInRange = true;
     private double distanceToGoal = 0.0;
     private double nudgeDeg = 0.0;
+    private double hoodNudge = 0.0;
+    private double hoodPos = HOOD_DOWN;
     private boolean safetyStopped = false;
 
     // encoder tracking; revolutions are re-picked at the start of every run (see updateEncoder)
@@ -190,6 +210,42 @@ public class Turret implements Mechanism {
         nudgeDeg -= NUDGE_DEG;
     }
 
+    public double getHoodPosition() {
+        return hoodPos;
+    }
+
+    // raising the hood means a smaller servo number (HOOD_UP < HOOD_DOWN)
+    public void hoodNudgeUp() {
+        hoodNudge -= HOOD_NUDGE;
+    }
+
+    public void hoodNudgeDown() {
+        hoodNudge += HOOD_NUDGE;
+    }
+
+    // straight-line interpolation between the HOOD_TABLE rows; holds the end values outside the table
+    public static double hoodForDistance(double distance) {
+        if (distance <= HOOD_TABLE[0][0]) {
+            return HOOD_TABLE[0][1];
+        }
+        for (int i = 1; i < HOOD_TABLE.length; i++) {
+            if (distance <= HOOD_TABLE[i][0]) {
+                double d0 = HOOD_TABLE[i - 1][0], h0 = HOOD_TABLE[i - 1][1];
+                double d1 = HOOD_TABLE[i][0], h1 = HOOD_TABLE[i][1];
+                return h0 + (h1 - h0) * (distance - d0) / (d1 - d0);
+            }
+        }
+        return HOOD_TABLE[HOOD_TABLE.length - 1][1];
+    }
+
+    private void updateHood() {
+        distanceToGoal = Math.hypot(goalX - odometry.getX(), goalY - odometry.getY());
+
+        double pos = aiming ? hoodForDistance(distanceToGoal) + hoodNudge : HOOD_DOWN;
+        hoodPos = Range.clip(pos, Math.min(HOOD_UP, HOOD_DOWN), Math.max(HOOD_UP, HOOD_DOWN));
+        hood.setPosition(hoodPos);
+    }
+
     public static double voltageToDegrees(double voltage) {
         return ((voltage - MIN_VOLTS) / (MAX_VOLTS - MIN_VOLTS)) * 360.0;
     }
@@ -235,11 +291,7 @@ public class Turret implements Mechanism {
 
     // angle the turret should point, relative to the robot's front (+ = right)
     private double calculateTarget() {
-        double x = odometry.getX();
-        double y = odometry.getY();
-        distanceToGoal = Math.hypot(goalX - x, goalY - y);
-
-        double target = goalAngle(x, y, odometry.getHeading(), goalX, goalY);
+        double target = goalAngle(odometry.getX(), odometry.getY(), odometry.getHeading(), goalX, goalY);
 
         targetInRange = target >= LEFT_BOUND && target <= RIGHT_BOUND;
         return Range.clip(target, LEFT_BOUND, RIGHT_BOUND);
@@ -289,6 +341,7 @@ public class Turret implements Mechanism {
         turretWheel.setThrottle(currentState.power);
         transferWheel.setPower(currentState.power);
 
+        updateHood(); // before the safety stop, so the hood keeps working even if the turret is stopped
         updateEncoder();
 
         if (turretDeg < LEFT_BOUND - SAFETY_MARGIN_DEG || turretDeg > RIGHT_BOUND + SAFETY_MARGIN_DEG) {
