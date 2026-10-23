@@ -20,6 +20,13 @@ import org.firstinspires.ftc.teamcode.subsystems.Turret;
 @NextTeleop(name = "Main TeleOp 10/17", group = "TeleOp")
 public class MainTeleOp extends NextOpMode {
 
+    // todo: set before each match (or make a red and a blue TeleOp)
+    public static final boolean RED_ALLIANCE = false;
+
+    // short-side start poses from decode endurancebot (Pedro coordinates); also the dpad-up reset spot
+    public static final double BLUE_RESET_X = 55.25, BLUE_RESET_Y = 9.0, BLUE_RESET_HEADING_DEG = 90.0;
+    public static final double RED_RESET_X = 88.75, RED_RESET_Y = 9.0, RED_RESET_HEADING_DEG = 90.0;
+
     private final Sator robot;
 
     public MainTeleOp(Sator robot) {
@@ -27,14 +34,32 @@ public class MainTeleOp extends NextOpMode {
         this.robot = robot;
     }
 
+    private void resetPose() {
+        if (RED_ALLIANCE) {
+            robot.odometry.setPose(RED_RESET_X, RED_RESET_Y, Math.toRadians(RED_RESET_HEADING_DEG));
+        } else {
+            robot.odometry.setPose(BLUE_RESET_X, BLUE_RESET_Y, Math.toRadians(BLUE_RESET_HEADING_DEG));
+        }
+    }
+
     @Override
     public void start() {
+        // robot object is reused across runs, so re-apply hardware setup every run
         robot.drivetrain.configure();
         robot.intake.configure();
         robot.transfer.configure();
+        robot.odometry.configure();
         robot.turret.configure();
 
+        // keep the pose from auto; only set one if nothing has since the code was loaded
+        if (!robot.odometry.hasPose()) {
+            resetPose();
+        }
+
+        robot.turret.setGoal(Turret.GOAL_X, Turret.GOAL_Y);
+
         CommandGamepad driver = new CommandGamepad(gamepad1);
+        CommandGamepad operator = new CommandGamepad(gamepad2);
 
         // schedule driving command continuously using gamepad joysticks
         Scheduler.schedule(
@@ -49,6 +74,20 @@ public class MainTeleOp extends NextOpMode {
         driver.a().onTrue(
                 Commands.instant(robot.drivetrain::resetHeading)
         );
+
+        // 'B' turns turret auto-aim on/off
+        driver.b().onTrue(robot.turret.toggleAimCommand());
+
+        // dpad up: robot is sitting on the reset spot, so tell odometry where it is
+        driver.dpadUp().onTrue(Commands.instant(this::resetPose));
+
+        // gamepad2 dpad left/right: nudge aim 3 degrees if shots miss to one side
+        operator.dpadLeft().onTrue(Commands.instant(robot.turret::nudgeLeft));
+        operator.dpadRight().onTrue(Commands.instant(robot.turret::nudgeRight));
+
+        // gamepad2 dpad up/down: nudge the hood if shots land short or long while auto-aiming
+        operator.dpadUp().onTrue(Commands.instant(robot.turret::hoodNudgeUp));
+        operator.dpadDown().onTrue(Commands.instant(robot.turret::hoodNudgeDown));
 
         // intake and transfer OFF -> FORWARDS -> BACKWARDS -> FORWARDS -> etc.
         driver.rightTrigger().isOver(0.5).onTrue(
@@ -89,6 +128,17 @@ public class MainTeleOp extends NextOpMode {
     @Override
     public void periodic() {
         telemetry.addData("Heading (rad)", robot.drivetrain.getHeading());
+        telemetry.addData("Odo X / Y (in)", "%.1f / %.1f", robot.odometry.getX(), robot.odometry.getY());
+        telemetry.addData("Odo Heading (deg)", "%.1f", Math.toDegrees(robot.odometry.getHeading()));
+        telemetry.addData("Auto-Aim", robot.turret.isAiming() ? "ON" : "off");
+        telemetry.addData("Goal In Range", robot.turret.isTargetInRange() ? "yes" : "NO - turn robot");
+        telemetry.addData("Distance To Goal (in)", "%.1f", robot.turret.getDistanceToGoal());
+        telemetry.addData("Hood Position", "%.3f", robot.turret.getHoodPosition());
+        telemetry.addData("Turret Deg / Target", "%.1f / %.1f",
+                robot.turret.getTurretDegrees(), robot.turret.getTargetDegrees());
+        if (robot.turret.isSafetyStopped()) {
+            telemetry.addLine("TURRET SAFETY STOP - turret went past its limits, restart OpMode");
+        }
         telemetry.addData("Intake State", robot.intake.getState());
         telemetry.addData("Transfer State", robot.transfer.getState());
         telemetry.addData("Turret State", robot.turret.getState());
