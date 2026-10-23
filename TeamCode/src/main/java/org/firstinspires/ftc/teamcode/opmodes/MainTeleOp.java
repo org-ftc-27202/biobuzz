@@ -142,6 +142,9 @@ public class MainTeleOp extends NextOpMode {
         telemetry.addData("Intake State", robot.intake.getState());
         telemetry.addData("Transfer State", robot.transfer.getState());
         telemetry.addData("Turret State", robot.turret.getState());
+        telemetry.addData("Turret Target Velocity", robot.turret.getTurretTarget());
+        telemetry.addData("Turret Current Velocity", robot.turret.getTurretVelocity());
+
         telemetry.update();
     }
 }

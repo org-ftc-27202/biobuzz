@@ -1,20 +1,31 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+
+import static dev.nextftc.units.Units.DegreesPerSecond;
+import static dev.nextftc.units.Units.Minutes;
+import static dev.nextftc.units.Units.Radians;
+import static dev.nextftc.units.Units.Rotations;
+import static dev.nextftc.units.Units.RotationsPerMinute;
+
 import com.pedropathing.ivy.Command;
 import com.pedropathing.ivy.commands.Commands;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
-
+import dev.nextftc.control.feedback.PIDController;
+import dev.nextftc.control.feedback.PIDCoefficients;
 import dev.nextftc.hardware.actuators.NextCRServo;
 import dev.nextftc.hardware.actuators.NextMotor;
 import dev.nextftc.hardware.actuators.NextServo;
 import dev.nextftc.hardware.sensors.NextAnalogInput;
 import dev.nextftc.robot.Mechanism;
+import dev.nextftc.units.Units;
+import dev.nextftc.units.measuretypes.Angle;
+import dev.nextftc.units.measuretypes.AngularVelocity;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
 public class Turret implements Mechanism {
-    private final NextMotor turretWheel = new NextMotor("turret");
+    private final NextMotor turretWheel = new NextMotor("turret", new Angle(0.2244, Radians));
     // continuous mode; small cache tolerance so tiny aiming powers still get sent
     private final NextCRServo turretRotation = new NextCRServo("turretRotation", 0.001);
     private final NextAnalogInput externalEncoder = new NextAnalogInput("externalEncoder");
@@ -35,7 +46,7 @@ public class Turret implements Mechanism {
     private static final double MIN_VOLTS = 0.015;
     private static final double MAX_VOLTS = 3.230;
     public static final double PULLEY_RATIO = 55.0 / 109.0; // turret degrees per encoder degree
-    public static final double TURRET_ZERO_DEG = 12.7; // todo: re-find with Turret Zero tuner
+    public static final double TURRET_ZERO_DEG = 114; // todo: re-find with Turret Zero tuner
 
     // how far the turret may turn from forward (- = left, + = right)
     public static final double LEFT_BOUND = -88.6;
@@ -97,16 +108,19 @@ public class Turret implements Mechanism {
     private double integralSum = 0.0;
     private double lastError = 0.0;
     private double lastPower = 0.0;
+    private double turretTarget;
+
+
 
     public enum State {
         OFF(0.0, 0.675),
-        ON(1.0, 0.675),
-        SHOOT(1.0, 0.535);
+        ON(3500.0, 0.675),
+        SHOOT(3500.0, 0.535);
 
         private final double power, ballStopperPos;
 
-        State(double power, double ballStopperPos) {
-            this.power = power;
+        State(double turretTarget, double ballStopperPos) {
+            this.power = turretTarget;
             this.ballStopperPos = ballStopperPos;
         }
     }
@@ -130,6 +144,14 @@ public class Turret implements Mechanism {
         lastError = 0.0;
         lastPower = 0.0;
         pidTimer.reset();
+        turretWheel.getVelocityConstants()
+                .withP(0.0002)
+                .withI(0.0)
+                .withD(0.0)
+                .withA(0.0)
+                .withS(0.0)
+                .withV(0.00133);// Like kP, other velocity PID constants include:
+// kP, kI, kD, kS, kV, kA
     }
 
     // call at the start of auto, with the turret pointing roughly forward
@@ -138,7 +160,8 @@ public class Turret implements Mechanism {
     }
 
     public void setPower(double power) {
-        turretWheel.setThrottle(power);
+        //turretWheel.setThrottle(power);
+        turretTarget = power;
         transferWheel.setPower(power);
     }
 
@@ -335,14 +358,21 @@ public class Turret implements Mechanism {
     public Command toggleAimCommand() {
         return Commands.instant(() -> setAiming(!aiming));
     }
+    public void updateTurretPID(){
+
+        turretWheel.setVelocitySetpoint(RotationsPerMinute.of(turretTarget));
+    }
+    public double getTurretTarget(){return turretTarget;}
+    public double getTurretVelocity(){return turretWheel.getEncoderVelocity().into(RotationsPerMinute);}
+
 
     @Override
     public void periodic() {
-        turretWheel.setThrottle(currentState.power);
         transferWheel.setPower(currentState.power);
 
         updateHood(); // before the safety stop, so the hood keeps working even if the turret is stopped
         updateEncoder();
+        updateTurretPID();
 
         if (turretDeg < LEFT_BOUND - SAFETY_MARGIN_DEG || turretDeg > RIGHT_BOUND + SAFETY_MARGIN_DEG) {
             safetyStopped = true;
