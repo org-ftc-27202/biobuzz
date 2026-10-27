@@ -2,6 +2,9 @@ package org.firstinspires.ftc.teamcode.opmodes;
 
 import static com.pedropathing.ivy.groups.Groups.parallel;
 
+import com.bylazar.panels.Panels;
+import com.bylazar.telemetry.PanelsTelemetry;
+import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.ivy.Scheduler;
 import com.pedropathing.ivy.commands.Commands;
 
@@ -29,6 +32,8 @@ public class MainTeleOp extends NextOpMode {
 
     private final Sator robot;
 
+    private TelemetryManager panelsTelemetry;
+
     public MainTeleOp(Sator robot) {
         super(robot);
         this.robot = robot;
@@ -45,6 +50,8 @@ public class MainTeleOp extends NextOpMode {
     @Override
     public void start() {
         // robot object is reused across runs, so re-apply hardware setup every run
+        panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
+
         robot.drivetrain.configure();
         robot.intake.configure();
         robot.transfer.configure();
@@ -144,6 +151,12 @@ public class MainTeleOp extends NextOpMode {
         telemetry.addData("Turret State", robot.turret.getState());
         telemetry.addData("Turret Target Velocity", robot.turret.getTurretTarget());
         telemetry.addData("Turret Current Velocity", robot.turret.getTurretVelocity());
+
+
+        panelsTelemetry.addData("Turret Current Velocity", robot.turret.getTurretVelocity());
+        panelsTelemetry.addData("Turret Target Velocity" , robot.turret.getTurretTarget());
+        panelsTelemetry.addData("Turret kV", robot.turret.getTurretPIDkV());
+        panelsTelemetry.update();
 
         telemetry.update();
     }

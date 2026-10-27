@@ -23,6 +23,7 @@ import dev.nextftc.units.measuretypes.Angle;
 import dev.nextftc.units.measuretypes.AngularVelocity;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.teamcode.configs.FlywheelPIDs;
 
 public class Turret implements Mechanism {
     private final NextMotor turretWheel = new NextMotor("turret", new Angle(0.2244, Radians));
@@ -114,8 +115,8 @@ public class Turret implements Mechanism {
 
     public enum State {
         OFF(0.0, 0.675),
-        ON(3500.0, 0.675),
-        SHOOT(3500.0, 0.535);
+        ON(FlywheelPIDs.turretTarget, 0.675),
+        SHOOT(FlywheelPIDs.turretTarget, 0.535);
 
         private final double power, ballStopperPos;
 
@@ -133,7 +134,7 @@ public class Turret implements Mechanism {
 
     // call at the start of every run (robot object is reused across runs)
     public void configure() {
-        turretWheel.setZeroPowerBehavior(NextMotor.ZeroPowerBehavior.BRAKE);
+        turretWheel.setZeroPowerBehavior(NextMotor.ZeroPowerBehavior.FLOAT);
         turretWheel.setDirection(NextMotor.Direction.REVERSE);
         transferWheel.setDirection(NextMotor.Direction.REVERSE);
         turretRotation.setDirection(ROTATION_REVERSED ? NextMotor.Direction.REVERSE : NextMotor.Direction.FORWARD);
@@ -145,12 +146,12 @@ public class Turret implements Mechanism {
         lastPower = 0.0;
         pidTimer.reset();
         turretWheel.getVelocityConstants()
-                .withP(0.0002)
-                .withI(0.0)
-                .withD(0.0)
-                .withA(0.0)
-                .withS(0.0)
-                .withV(0.00133);// Like kP, other velocity PID constants include:
+                .withP(FlywheelPIDs.kP)
+                .withI(FlywheelPIDs.kI)
+                .withD(FlywheelPIDs.kD)
+                .withA(FlywheelPIDs.kA)
+                .withS(FlywheelPIDs.kS)
+                .withV(FlywheelPIDs.kV);// Like kP, other velocity PID constants include:
 // kP, kI, kD, kS, kV, kA
     }
 
@@ -359,11 +360,12 @@ public class Turret implements Mechanism {
         return Commands.instant(() -> setAiming(!aiming));
     }
     public void updateTurretPID(){
+        turretWheel.setVelocitySetpoint(RotationsPerMinute.of(FlywheelPIDs.turretTarget));
 
-        turretWheel.setVelocitySetpoint(RotationsPerMinute.of(turretTarget));
     }
-    public double getTurretTarget(){return turretTarget;}
+    public double getTurretTarget(){return FlywheelPIDs.turretTarget;}
     public double getTurretVelocity(){return turretWheel.getEncoderVelocity().into(RotationsPerMinute);}
+    public double getTurretPIDkV(){return turretWheel.getVelocityConstants().getKV();}
 
 
     @Override
@@ -385,5 +387,13 @@ public class Turret implements Mechanism {
 
         targetDeg = aiming ? calculateTarget() : 0.0; // not aiming: face forward
         turretRotation.setPower(calculateYawPower(turretDeg - targetDeg));
+
+        turretWheel.getVelocityConstants()
+                .withP(FlywheelPIDs.kP)
+                .withI(FlywheelPIDs.kI)
+                .withD(FlywheelPIDs.kD)
+                .withA(FlywheelPIDs.kA)
+                .withS(FlywheelPIDs.kS)
+                .withV(FlywheelPIDs.kV);
     }
 }
