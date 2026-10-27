@@ -20,6 +20,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Turret;
 @NextTeleop(name = "Main TeleOp 10/17", group = "TeleOp")
 public class MainTeleOp extends NextOpMode {
 
+    // SETUP
     // todo: set before each match (or make a red and a blue TeleOp)
     public static final boolean RED_ALLIANCE = false;
 
@@ -70,6 +71,10 @@ public class MainTeleOp extends NextOpMode {
                 )
         );
 
+
+        // CONTROL BINDINGS
+
+
         // bind 'A' button to reset IMU heading
         driver.a().onTrue(
                 Commands.instant(robot.drivetrain::resetHeading)
@@ -114,6 +119,10 @@ public class MainTeleOp extends NextOpMode {
                         robot.intake.setStateCommand(Intake.State.FORWARDS)
                 )
         );
+
+        //Toggle Intake On/Off
+        driver.rightBumper().onTrue(robot.intake.toggleCommand());
+
 
         // turn off turret, transfer, and intake
         driver.dpadDown().onTrue(
