@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -66,6 +67,14 @@ public class TurretZero extends LinearOpMode {
         double maxDeg = Double.NEGATIVE_INFINITY;
         boolean lastDpadUp = false;
 
+        // fine-step power, for finding the smallest power that moves the turret (VISION_MIN_POWER / MIN_POWER)
+        double stepPower = 0.0;
+        double sentPower = 0.0;
+        boolean lastLeftBumper = false, lastRightBumper = false;
+        double lastTurretDeg = Double.NaN;
+        double turretSpeed = 0.0;
+        ElapsedTime speedTimer = new ElapsedTime();
+
         while (!isStopRequested()) {
             // ---- encoder and lap counting ----
             double encoderDeg = readEncoderDegrees(externalEncoder);
@@ -81,10 +90,34 @@ public class TurretZero extends LinearOpMode {
             minDeg = Math.min(minDeg, turretDeg);
             maxDeg = Math.max(maxDeg, turretDeg);
 
+            // turret speed (deg/s), smoothed so it's readable
+            double seconds = speedTimer.seconds();
+            speedTimer.reset();
+            if (!Double.isNaN(lastTurretDeg) && seconds > 0) {
+                turretSpeed = 0.7 * turretSpeed + 0.3 * (turretDeg - lastTurretDeg) / seconds;
+            }
+            lastTurretDeg = turretDeg;
+
             // ---- controls (only after START) ----
             if (opModeIsActive()) {
+                // bumpers step the power in tiny amounts, X sets it back to 0
+                if (gamepad1.right_bumper && !lastRightBumper) {
+                    stepPower += 0.002;
+                }
+                if (gamepad1.left_bumper && !lastLeftBumper) {
+                    stepPower -= 0.002;
+                }
+                if (gamepad1.x) {
+                    stepPower = 0.0;
+                }
+                lastRightBumper = gamepad1.right_bumper;
+                lastLeftBumper = gamepad1.left_bumper;
+
+                // the stick overrides the step power while it's being pushed.
                 // positive servo power turns the turret toward negative degrees, so stick right = turret right
-                turretRotation.setPower(-gamepad1.left_stick_x * MAX_MANUAL_POWER);
+                double stickPower = -gamepad1.left_stick_x * MAX_MANUAL_POWER;
+                sentPower = Math.abs(gamepad1.left_stick_x) > 0.05 ? stickPower : stepPower;
+                turretRotation.setPower(sentPower);
 
                 // right stick up = raise hood (smaller servo number)
                 hoodPos += 0.003 * gamepad1.right_stick_y;
@@ -115,8 +148,14 @@ public class TurretZero extends LinearOpMode {
 
             // ---- telemetry ----
             telemetry.addLine(opModeIsActive()
-                    ? "Left stick: turn turret (NO LIMITS)  |  Right stick: hood  |  A: reset min/max  |  Dpad up: reset pose"
+                    ? "Left stick: turn turret (NO LIMITS)  |  Bumpers: power -/+0.002  |  X: power 0  |  "
+                    + "Right stick: hood  |  A: reset min/max  |  Dpad up: reset pose"
                     : "Point turret roughly forward, then press START");
+
+            telemetry.addLine("--- Min power test: bump power up until the turret JUST starts moving, both ways ---");
+            telemetry.addData("Turret Power (sent)", "%.3f", sentPower);
+            telemetry.addData("Turret Speed (deg/s)", "%.1f  (%s)", turretSpeed,
+                    Math.abs(turretSpeed) > 0.5 ? "MOVING" : "stopped");
 
             telemetry.addLine("--- Turret (+ = right) ---");
             telemetry.addData("Turret Deg", "%.1f", turretDeg);
