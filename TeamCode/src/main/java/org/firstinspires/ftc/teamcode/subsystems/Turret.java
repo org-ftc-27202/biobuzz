@@ -45,7 +45,8 @@ public class Turret implements Mechanism {
 
     // hive position in Pedro field coordinates (inches): x = from left wall, y = from back wall.
     // same hive for both alliances
-    public static final double GOAL_X = 55.5, GOAL_Y = 57.0;
+    // default hive (red near hive, 2.5 tiles right, 2 tiles up); zones in FieldZones set their own
+    public static final double GOAL_X = 60.0, GOAL_Y = 48.0;
 
     // external encoder
     private static final double ANALOG_MAX_VOLTS = 3.3;

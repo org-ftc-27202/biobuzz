@@ -67,22 +67,29 @@ public final class FieldZones {
         }
     }
 
+    // ---- hive centers, in tiles ----
+    // red near hive (tags 35, 36): 2.5 right, on the line between tiles 2 and 3 going up
+    public static final double RED_NEAR_HIVE_X = 2.5, RED_NEAR_HIVE_Y = 2.0;
+    // red far hive (tags 32, 31): red near mirrored over y = 3 tiles (72 in)
+    public static final double RED_FAR_HIVE_X = 2.5, RED_FAR_HIVE_Y = 6.0 - RED_NEAR_HIVE_Y;
+    // blue hives: red ones mirrored over x = 3 tiles (72 in)
+    public static final double BLUE_NEAR_HIVE_X = 6.0 - RED_NEAR_HIVE_X, BLUE_NEAR_HIVE_Y = RED_NEAR_HIVE_Y; // tags 40, 39
+    public static final double BLUE_FAR_HIVE_X = 6.0 - RED_FAR_HIVE_X, BLUE_FAR_HIVE_Y = RED_FAR_HIVE_Y;     // tags 43, 44
+
     // ---- RED: split at x = 2.5 tiles and y = 3 tiles ----
-    // todo: add .aimAt(xTiles, yTiles) with each tag's hive position
     public static final Zone[] RED = {
-            new Zone("red orange", 0.0, 0.0, 2.5, 3.0, 35),
-            new Zone("red green", 2.5, 0.0, 6.0, 3.0, 36),
-            new Zone("red blue", 0.0, 3.0, 2.5, 6.0, 32),
-            new Zone("red purple", 2.5, 3.0, 6.0, 6.0, 31),
+            new Zone("red orange", 0.0, 0.0, 2.5, 3.0, 35).aimAt(RED_NEAR_HIVE_X, RED_NEAR_HIVE_Y),
+            new Zone("red green", 2.5, 0.0, 6.0, 3.0, 36).aimAt(RED_NEAR_HIVE_X, RED_NEAR_HIVE_Y),
+            new Zone("red blue", 0.0, 3.0, 2.5, 6.0, 32).aimAt(RED_FAR_HIVE_X, RED_FAR_HIVE_Y),
+            new Zone("red purple", 2.5, 3.0, 6.0, 6.0, 31).aimAt(RED_FAR_HIVE_X, RED_FAR_HIVE_Y),
     };
 
     // ---- BLUE: mirror of red, split at x = 3.5 tiles and y = 3 tiles ----
-    // todo: add .aimAt(xTiles, yTiles) with each tag's hive position
     public static final Zone[] BLUE = {
-            new Zone("blue orange", 3.5, 0.0, 6.0, 3.0, 40),
-            new Zone("blue green", 0.0, 0.0, 3.5, 3.0, 39),
-            new Zone("blue blue", 3.5, 3.0, 6.0, 6.0, 43),
-            new Zone("blue purple", 0.0, 3.0, 3.5, 6.0, 44),
+            new Zone("blue orange", 3.5, 0.0, 6.0, 3.0, 40).aimAt(BLUE_NEAR_HIVE_X, BLUE_NEAR_HIVE_Y),
+            new Zone("blue green", 0.0, 0.0, 3.5, 3.0, 39).aimAt(BLUE_NEAR_HIVE_X, BLUE_NEAR_HIVE_Y),
+            new Zone("blue blue", 3.5, 3.0, 6.0, 6.0, 43).aimAt(BLUE_FAR_HIVE_X, BLUE_FAR_HIVE_Y),
+            new Zone("blue purple", 0.0, 3.0, 3.5, 6.0, 44).aimAt(BLUE_FAR_HIVE_X, BLUE_FAR_HIVE_Y),
     };
 
     /**
