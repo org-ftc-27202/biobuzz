@@ -44,14 +44,14 @@ public class Turret implements Mechanism {
 
     // hive position in Pedro field coordinates (inches): x = from left wall, y = from back wall.
     // same hive for both alliances
-    public static final double GOAL_X = 54.0, GOAL_Y = 57.0;
+    public static final double GOAL_X = 55.5, GOAL_Y = 57.0;
 
     // external encoder
     private static final double ANALOG_MAX_VOLTS = 3.3;
     private static final double MIN_VOLTS = 0.015;
     private static final double MAX_VOLTS = 3.230;
     public static final double PULLEY_RATIO = 55.0 / 109.0; // turret degrees per encoder degree
-    public static final double TURRET_ZERO_DEG = 114; // todo: re-find with Turret Zero tuner
+    public static final double TURRET_ZERO_DEG = 129.7; // todo: re-find with Turret Zero tuner
 
     // how far the turret may turn from forward (- = left, + = right)
     public static final double LEFT_BOUND = -88.6;
@@ -500,8 +500,11 @@ public class Turret implements Mechanism {
         return Commands.instant(() -> setAiming(!aiming));
     }
     public void updateTurretPID(){
-        turretWheel.setVelocitySetpoint(RotationsPerMinute.of(FlywheelPIDs.turretTarget));
-
+        if (FlywheelPIDs.turretTarget == 0.0) {
+            turretWheel.setThrottle(0.0);
+        } else {
+            turretWheel.setVelocitySetpoint(RotationsPerMinute.of(FlywheelPIDs.turretTarget));
+        }
     }
     public double getTurretTarget(){return FlywheelPIDs.turretTarget;}
     public double getTurretVelocity(){return turretWheel.getEncoderVelocity().into(RotationsPerMinute);}
