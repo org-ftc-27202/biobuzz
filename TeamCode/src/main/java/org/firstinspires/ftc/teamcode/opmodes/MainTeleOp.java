@@ -183,6 +183,9 @@ public class MainTeleOp extends NextOpMode {
         panelsTelemetry.addData("Aim Limelight Locked", robot.turret.isVisionLocked() ? 1.0 : 0.0);
         panelsTelemetry.addData("Aim Using Limelight PID", robot.turret.isUsingVisionPid() ? 1.0 : 0.0);
         panelsTelemetry.addData("Aim Encoder Correction", robot.turret.getEncoderCorrectionDegrees());
+        panelsTelemetry.addData("Zero Baseline", 0.0);
+        panelsTelemetry.addData("Six Baseline", 6.0);
+        panelsTelemetry.addData("-Six Baseline", -6.0);
         panelsTelemetry.update();
 
         telemetry.update();

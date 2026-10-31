@@ -73,8 +73,8 @@ public class Turret implements Mechanism {
     // slowly corrects the encoder so aiming stays right even after the tag is lost or the belt skips.
     public static final String LIMELIGHT_NAME = "limelight";
     public static final int LIMELIGHT_PIPELINE = 0; // todo: index of the AprilTag pipeline
-    public static final int RED_TAG_ID = 0;  // todo: hive tag to aim at from the red side
-    public static final int BLUE_TAG_ID = 0; // todo: hive tag to aim at from the blue side
+    public static final int RED_TAG_ID = 39;  // todo: hive tag to aim at from the red side
+    public static final int BLUE_TAG_ID = 35; // todo: hive tag to aim at from the blue side
     // the tx aim point (TurretPIDs.limelightTxAim) is the tx read when the turret is aimed perfectly;
     // find it in the tester: aim the turret at the hive by hand and read "Limelight tx"
     private static final long LIMELIGHT_MAX_STALENESS_MS = 100; // ignore old results

@@ -18,11 +18,11 @@ public class TurretPIDs {
     public static double maxPower = 1.0;
 
     // ---- Limelight PID: takes over while the Limelight sees our tag (error in tx) ----
-    public static double visionKP = 0.01;
+    public static double visionKP = 0.014;
     public static double visionKI = 0.0;
     public static double visionKD = 0.0005;
     public static double visionMaxIntegralSum = 0.5;
-    public static double visionMinPower = 0.006; // smallest power that still moves the turret
+    public static double visionMinPower = 0.009; // smallest power that still moves the turret
     public static double visionTolerance = 0.1;  // stops correcting inside this much tx
     public static double visionMaxPower = 0.4;
 
