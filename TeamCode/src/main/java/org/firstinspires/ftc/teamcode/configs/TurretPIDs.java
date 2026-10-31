@@ -22,7 +22,13 @@ public class TurretPIDs {
     public static double visionKI = 0.0;
     public static double visionKD = 0.0005;
     public static double visionMaxIntegralSum = 0.5;
-    public static double visionMinPower = 0.009; // smallest power that still moves the turret
+    // the turret needs different power to move each way, so each direction has its own settings.
+    // minPower: the push never drops below this while outside the tolerance (a floor).
+    // kS: extra push always ADDED in that direction, for drag that never goes away (cable, belt).
+    public static double visionMinPowerCCW = 0.009; // counterclockwise (turret turning left)
+    public static double visionMinPowerCW = 0.07;   // clockwise (turret turning right)
+    public static double visionKsCCW = 0.0;
+    public static double visionKsCW = 0.0;
     public static double visionTolerance = 0.1;  // stops correcting inside this much tx
     public static double visionMaxPower = 0.4;
 

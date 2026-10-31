@@ -144,6 +144,10 @@ public class MainTeleOp extends NextOpMode {
 
     @Override
     public void periodic() {
+        telemetry.addData("Loop", "%.1f ms (%.0f Hz) - encoder read + servo update each loop",
+                robot.turret.getLoopMs(), robot.turret.getLoopHz());
+        telemetry.addData("Limelight Data", "%.0f Hz new results, %.0f ms latency, %.0f ms old",
+                robot.turret.getLimelightHz(), robot.turret.getLimelightLatencyMs(), robot.turret.getLimelightAgeMs());
         telemetry.addData("Heading (rad)", robot.drivetrain.getHeading());
         telemetry.addData("Odo X / Y (in)", "%.1f / %.1f", robot.odometry.getX(), robot.odometry.getY());
         telemetry.addData("Odo Heading (deg)", "%.1f", Math.toDegrees(robot.odometry.getHeading()));
@@ -186,6 +190,13 @@ public class MainTeleOp extends NextOpMode {
         panelsTelemetry.addData("Zero Baseline", 0.0);
         panelsTelemetry.addData("Six Baseline", 6.0);
         panelsTelemetry.addData("-Six Baseline", -6.0);
+
+        // timing
+        panelsTelemetry.addData("Loop Time (ms)", robot.turret.getLoopMs());
+        panelsTelemetry.addData("Loop Rate (Hz)", robot.turret.getLoopHz());
+        panelsTelemetry.addData("Limelight Rate (Hz)", robot.turret.getLimelightHz());
+        panelsTelemetry.addData("Limelight Latency (ms)", robot.turret.getLimelightLatencyMs());
+        panelsTelemetry.addData("Limelight Age (ms)", robot.turret.getLimelightAgeMs());
         panelsTelemetry.update();
 
         telemetry.update();

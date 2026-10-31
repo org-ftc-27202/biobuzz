@@ -133,6 +133,15 @@ public class Turret implements Mechanism {
     private boolean usingVisionPid = false; // which controller ran last loop
     private double yawPower = 0.0;          // power sent to the rotation servo this loop (for graphs)
     private double yawError = 0.0;          // error the active PID saw this loop (for graphs)
+
+    // timing (smoothed so the numbers are readable)
+    private final ElapsedTime loopTimer = new ElapsedTime();
+    private double loopMs = 0.0;            // time between turret updates = one robot loop
+    private final ElapsedTime limelightFrameTimer = new ElapsedTime();
+    private long lastLimelightStamp = -1;
+    private double limelightFrameMs = 0.0;  // time between NEW Limelight results
+    private double limelightLatencyMs = 0.0; // capture + processing time inside the Limelight
+    private double limelightAgeMs = 0.0;     // how old the latest result is when the code reads it
     private double turretTarget;
 
 
@@ -180,6 +189,13 @@ public class Turret implements Mechanism {
         lastPower = 0.0;
         usingVisionPid = false;
         pidTimer.reset();
+
+        // timing: start fresh so the gap between runs doesn't skew the numbers
+        loopMs = 0.0;
+        loopTimer.reset();
+        limelightFrameMs = 0.0;
+        lastLimelightStamp = -1;
+        limelightFrameTimer.reset();
         turretWheel.getVelocityConstants()
                 .withP(FlywheelPIDs.kP)
                 .withI(FlywheelPIDs.kI)
@@ -285,6 +301,32 @@ public class Turret implements Mechanism {
         return yawError;
     }
 
+    // robot loop: how often the code reads the encoder / Limelight and sends a new servo power
+    public double getLoopMs() {
+        return loopMs;
+    }
+
+    public double getLoopHz() {
+        return loopMs > 0 ? 1000.0 / loopMs : 0.0;
+    }
+
+    // how often the Limelight delivers a NEW result (0 if nothing new is arriving)
+    public double getLimelightHz() {
+        return limelightFrameMs > 0 && limelightFrameTimer.milliseconds() < 500 ? 1000.0 / limelightFrameMs : 0.0;
+    }
+
+    public double getLimelightLatencyMs() {
+        return limelightLatencyMs;
+    }
+
+    public double getLimelightAgeMs() {
+        return limelightAgeMs;
+    }
+
+    private static double smooth(double previous, double sample) {
+        return previous == 0.0 ? sample : 0.9 * previous + 0.1 * sample;
+    }
+
     public double getTurretSpeed() {
         return turretSpeed;
     }
@@ -317,6 +359,21 @@ public class Turret implements Mechanism {
             return;
         }
         LLResult result = limelight.getLatestResult();
+
+        // timing: count a new frame whenever the result's timestamp changes (with or without tags)
+        if (result != null) {
+            long stamp = result.getControlHubTimeStamp();
+            if (stamp != lastLimelightStamp) {
+                if (lastLimelightStamp >= 0) {
+                    limelightFrameMs = smooth(limelightFrameMs, limelightFrameTimer.milliseconds());
+                }
+                limelightFrameTimer.reset();
+                lastLimelightStamp = stamp;
+                limelightLatencyMs = smooth(limelightLatencyMs, result.getCaptureLatency() + result.getTargetingLatency());
+            }
+            limelightAgeMs = result.getStaleness();
+        }
+
         if (result == null || !result.isValid() || result.getStaleness() > LIMELIGHT_MAX_STALENESS_MS) {
             return;
         }
@@ -477,18 +534,24 @@ public class Turret implements Mechanism {
 
     private double calculateYawPower(double error) {
         return calculateYawPower(error, TurretPIDs.kP, TurretPIDs.kI, TurretPIDs.kD, TurretPIDs.maxIntegralSum,
-                TurretPIDs.minPower, TurretPIDs.tolerance, TurretPIDs.maxPower);
+                TurretPIDs.minPower, TurretPIDs.minPower, 0.0, 0.0, TurretPIDs.tolerance, TurretPIDs.maxPower);
     }
 
     // error > 0 means drive with positive power (turret degrees go down)
     private double calculateVisionPower(double error) {
+        // the hive just crossed the crosshair: drop any built-up integral so it doesn't overshoot
+        if (error * lastError < 0) {
+            integralSum = 0.0;
+        }
         return calculateYawPower(error, TurretPIDs.visionKP, TurretPIDs.visionKI, TurretPIDs.visionKD,
-                TurretPIDs.visionMaxIntegralSum, TurretPIDs.visionMinPower, TurretPIDs.visionTolerance,
-                TurretPIDs.visionMaxPower);
+                TurretPIDs.visionMaxIntegralSum, TurretPIDs.visionMinPowerCCW, TurretPIDs.visionMinPowerCW,
+                TurretPIDs.visionKsCCW, TurretPIDs.visionKsCW, TurretPIDs.visionTolerance, TurretPIDs.visionMaxPower);
     }
 
+    // positive power turns the turret counterclockwise (degrees go down), negative turns it clockwise
     private double calculateYawPower(double error, double kP, double kI, double kD, double maxIntegralSum,
-                                     double minPower, double tolerance, double maxPower) {
+                                     double minPowerCCW, double minPowerCW, double ksCCW, double ksCW,
+                                     double tolerance, double maxPower) {
         double seconds = pidTimer.seconds();
         pidTimer.reset();
 
@@ -499,11 +562,11 @@ public class Turret implements Mechanism {
         double power = error * kP + integralSum * kI + derivative * kD;
 
         if (Math.abs(error) > tolerance) {
-            // small powers don't move the turret, so push at least minPower
-            if (power > 0 && power < minPower) {
-                power = minPower;
-            } else if (power < 0 && power > -minPower) {
-                power = -minPower;
+            // add each direction's constant push (kS), then make sure it's at least that direction's minimum
+            if (power > 0) {
+                power = Math.max(power + ksCCW, minPowerCCW);
+            } else if (power < 0) {
+                power = Math.min(power - ksCW, -minPowerCW);
             }
         } else {
             power = 0.0;
@@ -540,6 +603,9 @@ public class Turret implements Mechanism {
 
     @Override
     public void periodic() {
+        loopMs = smooth(loopMs, loopTimer.milliseconds());
+        loopTimer.reset();
+
         transferWheel.setPower(currentState.power);
 
         updateHood(); // before the safety stop, so the hood keeps working even if the turret is stopped

@@ -70,7 +70,7 @@ public class TurretZero extends LinearOpMode {
         double maxDeg = Double.NEGATIVE_INFINITY;
         boolean lastDpadUp = false;
 
-        // fine-step power, for finding the smallest power that moves the turret (TurretPIDs.visionMinPower / minPower)
+        // fine-step power, for finding the smallest power that moves the turret (TurretPIDs.visionMinPowerCCW / visionMinPowerCW / minPower)
         double stepPower = 0.0;
         double sentPower = 0.0;
         boolean lastLeftBumper = false, lastRightBumper = false;
