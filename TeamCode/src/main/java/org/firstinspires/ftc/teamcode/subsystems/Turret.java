@@ -73,6 +73,19 @@ public class Turret implements Mechanism {
     private static final double MAX_POWER = 1.0;
     private static final double MAX_POWER_STEP = 0.3; // per loop
 
+    // Limelight PID: used instead of the yaw PID above while the Limelight sees our tag.
+    // it just drives tx toward LIMELIGHT_TX_AIM, so it works the same whatever units tx is in.
+    // STARTING VALUES - tune on the robot.
+    private static final double VISION_KP = 0.01;
+    private static final double VISION_KI = 0.0;
+    private static final double VISION_KD = 0.0005;
+    private static final double VISION_MAX_INTEGRAL_SUM = 0.5;
+    private static final double VISION_MIN_POWER = 0.006; // smallest power that still moves the turret
+    private static final double VISION_TOLERANCE = 0.1;   // stop correcting within this much tx
+    private static final double VISION_MAX_POWER = 0.4;
+    // set true if the turret moves AWAY from the tag when it locks on (camera mounted flipped)
+    private static final boolean LIMELIGHT_TX_REVERSED = false;
+
     private static final double NUDGE_DEG = 3.0;
 
     // ---- Limelight 3A, mounted on the turret ----
@@ -138,6 +151,7 @@ public class Turret implements Mechanism {
     private double integralSum = 0.0;
     private double lastError = 0.0;
     private double lastPower = 0.0;
+    private boolean usingVisionPid = false; // which controller ran last loop
     private double turretTarget;
 
 
@@ -183,6 +197,7 @@ public class Turret implements Mechanism {
         integralSum = 0.0;
         lastError = 0.0;
         lastPower = 0.0;
+        usingVisionPid = false;
         pidTimer.reset();
         turretWheel.getVelocityConstants()
                 .withP(FlywheelPIDs.kP)
@@ -279,6 +294,11 @@ public class Turret implements Mechanism {
     }
 
     // true while the Limelight sees our tag and is steering the turret
+    // true while the Limelight PID (not the encoder PID) is driving the turret
+    public boolean isUsingVisionPid() {
+        return usingVisionPid;
+    }
+
     public boolean isVisionLocked() {
         return visionLocked;
     }
@@ -308,7 +328,7 @@ public class Turret implements Mechanism {
         }
         for (LLResultTypes.FiducialResult tag : result.getFiducialResults()) {
             if (tag.getFiducialId() == tagId) {
-                visionTx = tag.getTargetXDegrees();
+                visionTx = LIMELIGHT_TX_REVERSED ? -tag.getTargetXDegrees() : tag.getTargetXDegrees();
                 visionLocked = true;
                 return;
             }
@@ -462,21 +482,32 @@ public class Turret implements Mechanism {
     }
 
     private double calculateYawPower(double error) {
+        return calculateYawPower(error, KP, KI, KD, MAX_INTEGRAL_SUM, MIN_POWER, TOLERANCE_DEG, MAX_POWER);
+    }
+
+    // error > 0 means drive with positive power (turret degrees go down)
+    private double calculateVisionPower(double error) {
+        return calculateYawPower(error, VISION_KP, VISION_KI, VISION_KD, VISION_MAX_INTEGRAL_SUM,
+                VISION_MIN_POWER, VISION_TOLERANCE, VISION_MAX_POWER);
+    }
+
+    private double calculateYawPower(double error, double kP, double kI, double kD, double maxIntegralSum,
+                                     double minPower, double tolerance, double maxPower) {
         double seconds = pidTimer.seconds();
         pidTimer.reset();
 
-        integralSum = Range.clip(integralSum + error * seconds, -MAX_INTEGRAL_SUM, MAX_INTEGRAL_SUM);
+        integralSum = Range.clip(integralSum + error * seconds, -maxIntegralSum, maxIntegralSum);
         double derivative = seconds > 0 ? (error - lastError) / seconds : 0.0;
         lastError = error;
 
-        double power = error * KP + integralSum * KI + derivative * KD;
+        double power = error * kP + integralSum * kI + derivative * kD;
 
-        if (Math.abs(error) > TOLERANCE_DEG) {
-            // small powers don't move the turret, so push at least MIN_POWER
-            if (power > 0 && power < MIN_POWER) {
-                power = MIN_POWER;
-            } else if (power < 0 && power > -MIN_POWER) {
-                power = -MIN_POWER;
+        if (Math.abs(error) > tolerance) {
+            // small powers don't move the turret, so push at least minPower
+            if (power > 0 && power < minPower) {
+                power = minPower;
+            } else if (power < 0 && power > -minPower) {
+                power = -minPower;
             }
         } else {
             power = 0.0;
@@ -485,7 +516,7 @@ public class Turret implements Mechanism {
         // don't change power too fast between loops
         power = lastPower + Range.clip(power - lastPower, -MAX_POWER_STEP, MAX_POWER_STEP);
         lastPower = power;
-        return Range.clip(power, -MAX_POWER, MAX_POWER);
+        return Range.clip(power, -maxPower, maxPower);
     }
 
     public Command setStateCommand(State state) {
@@ -533,7 +564,18 @@ public class Turret implements Mechanism {
         }
 
         targetDeg = aiming ? calculateTarget() : 0.0; // not aiming: face forward
-        turretRotation.setPower(calculateYawPower(turretDeg - targetDeg));
+
+        // Limelight PID while it sees our tag (and the aim point is inside the turret's range),
+        // otherwise the encoder PID. both use the same sign: positive power = turret degrees go down.
+        boolean useVision = aiming && visionLocked && targetInRange;
+        double error = useVision ? -visionError() : turretDeg - targetDeg;
+        if (useVision != usingVisionPid) {
+            // switching controllers: start fresh so there's no integral carry-over or derivative kick
+            integralSum = 0.0;
+            lastError = error;
+            usingVisionPid = useVision;
+        }
+        turretRotation.setPower(useVision ? calculateVisionPower(error) : calculateYawPower(error));
 
         turretWheel.getVelocityConstants()
                 .withP(FlywheelPIDs.kP)

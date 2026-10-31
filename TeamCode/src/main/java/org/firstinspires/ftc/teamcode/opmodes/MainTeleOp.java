@@ -161,6 +161,7 @@ public class MainTeleOp extends NextOpMode {
                 ? String.format("LOCKED on tag %d, tx %.2f", robot.turret.getTargetTagId(), robot.turret.getVisionTx())
                 : String.format("searching for tag %d", robot.turret.getTargetTagId()));
         telemetry.addData("Encoder Correction (deg)", "%.2f", robot.turret.getEncoderCorrectionDegrees());
+        telemetry.addData("Turret Control", robot.turret.isUsingVisionPid() ? "LIMELIGHT PID" : "encoder PID");
         telemetry.addData("Intake State", robot.intake.getState());
         telemetry.addData("Transfer State", robot.transfer.getState());
         telemetry.addData("Turret State", robot.turret.getState());
