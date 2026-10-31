@@ -28,8 +28,8 @@ public class MainTeleOp extends NextOpMode {
     public static final boolean RED_ALLIANCE = false;
 
     // short-side start poses from decode endurancebot (Pedro coordinates); also the dpad-up reset spot
-    public static final double BLUE_RESET_X = 55.25, BLUE_RESET_Y = 9.0, BLUE_RESET_HEADING_DEG = 90.0;
-    public static final double RED_RESET_X = 88.75, RED_RESET_Y = 9.0, RED_RESET_HEADING_DEG = 90.0;
+    public static final double BLUE_RESET_X = 111.0, BLUE_RESET_Y = 7.2, BLUE_RESET_HEADING_DEG = 90.0;
+    public static final double RED_RESET_X = 30.5, RED_RESET_Y = 7.2, RED_RESET_HEADING_DEG = 90.0;
 
     private final Sator robot;
 
