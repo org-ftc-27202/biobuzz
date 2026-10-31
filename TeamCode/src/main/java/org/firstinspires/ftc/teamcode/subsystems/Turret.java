@@ -9,10 +9,14 @@ import static dev.nextftc.units.Units.RotationsPerMinute;
 
 import com.pedropathing.ivy.Command;
 import com.pedropathing.ivy.commands.Commands;
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 import dev.nextftc.control.feedback.PIDController;
 import dev.nextftc.control.feedback.PIDCoefficients;
+import dev.nextftc.hardware.RobotController;
 import dev.nextftc.hardware.actuators.NextCRServo;
 import dev.nextftc.hardware.actuators.NextMotor;
 import dev.nextftc.hardware.actuators.NextServo;
@@ -71,6 +75,22 @@ public class Turret implements Mechanism {
 
     private static final double NUDGE_DEG = 3.0;
 
+    // ---- Limelight 3A, mounted on the turret ----
+    // encoder + odometry get the turret close; once the Limelight sees our tag, it takes over aiming and
+    // slowly corrects the encoder so aiming stays right even after the tag is lost or the belt skips.
+    public static final String LIMELIGHT_NAME = "limelight";
+    public static final int LIMELIGHT_PIPELINE = 0; // todo: index of the AprilTag pipeline
+    public static final int RED_TAG_ID = 0;  // todo: hive tag to aim at from the red side
+    public static final int BLUE_TAG_ID = 0; // todo: hive tag to aim at from the blue side
+    // tx (deg) the Limelight reads when the turret is aimed perfectly; 0 if the camera lines up with the shot.
+    // find it in the tester: aim the turret at the hive by hand and read "Limelight tx"
+    public static final double LIMELIGHT_TX_AIM = 0.0;
+    private static final long LIMELIGHT_MAX_STALENESS_MS = 100; // ignore old results
+    // encoder correction only learns while the turret is moving slowly (fast spins blur the image)
+    private static final double CORRECTION_MAX_TURRET_SPEED = 30.0; // deg/s
+    private static final double CORRECTION_GAIN = 0.1;             // 0-1 per loop; smaller = smoother
+    private static final double MAX_ENCODER_CORRECTION_DEG = 45.0; // never shift the encoder more than this
+
     // ---- hood ----
     public static final double HOOD_DOWN = 0.855; // fully down
     public static final double HOOD_UP = 0.12;    // fully up
@@ -104,6 +124,15 @@ public class Turret implements Mechanism {
     private int revolutions = 0;
     private double turretDeg = 0.0;
     private double targetDeg = 0.0;
+    private double turretSpeed = 0.0; // deg/s
+    private final ElapsedTime speedTimer = new ElapsedTime();
+
+    // limelight
+    private Limelight3A limelight;
+    private int tagId = BLUE_TAG_ID;
+    private boolean visionLocked = false;
+    private double visionTx = 0.0;
+    private double encoderCorrectionDeg = 0.0; // learned from the Limelight, added to the encoder angle
 
     private final ElapsedTime pidTimer = new ElapsedTime();
     private double integralSum = 0.0;
@@ -138,6 +167,16 @@ public class Turret implements Mechanism {
         turretWheel.setDirection(NextMotor.Direction.REVERSE);
         transferWheel.setDirection(NextMotor.Direction.REVERSE);
         turretRotation.setDirection(ROTATION_REVERSED ? NextMotor.Direction.REVERSE : NextMotor.Direction.FORWARD);
+
+        // limelight is optional: if it's missing from the config, aiming falls back to encoder + odometry
+        try {
+            limelight = RobotController.hardwareMap().get(Limelight3A.class, LIMELIGHT_NAME);
+            limelight.pipelineSwitch(LIMELIGHT_PIPELINE);
+            limelight.setPollRateHz(100);
+            limelight.start();
+        } catch (Exception e) {
+            limelight = null;
+        }
 
         safetyStopped = false;
         encoderStarted = false; // re-read the encoder and re-pick revolutions
@@ -226,6 +265,97 @@ public class Turret implements Mechanism {
         return safetyStopped;
     }
 
+    // which hive tag to aim at (set from the alliance at the start of TeleOp / auto)
+    public void setTargetTagId(int tagId) {
+        this.tagId = tagId;
+    }
+
+    public int getTargetTagId() {
+        return tagId;
+    }
+
+    public boolean isLimelightConnected() {
+        return limelight != null && limelight.isConnected();
+    }
+
+    // true while the Limelight sees our tag and is steering the turret
+    public boolean isVisionLocked() {
+        return visionLocked;
+    }
+
+    public double getVisionTx() {
+        return visionTx;
+    }
+
+    public double getEncoderCorrectionDegrees() {
+        return encoderCorrectionDeg;
+    }
+
+    // forget what the Limelight taught the encoder (e.g. after re-zeroing by hand)
+    public void resetEncoderCorrection() {
+        encoderCorrectionDeg = 0.0;
+    }
+
+    // fresh result from the Limelight that includes our tag
+    private void updateVision() {
+        visionLocked = false;
+        if (limelight == null) {
+            return;
+        }
+        LLResult result = limelight.getLatestResult();
+        if (result == null || !result.isValid() || result.getStaleness() > LIMELIGHT_MAX_STALENESS_MS) {
+            return;
+        }
+        for (LLResultTypes.FiducialResult tag : result.getFiducialResults()) {
+            if (tag.getFiducialId() == tagId) {
+                visionTx = tag.getTargetXDegrees();
+                visionLocked = true;
+                return;
+            }
+        }
+    }
+
+    // how far the shot is off the hive per the Limelight (+ = hive is to the right). includes the aim nudge.
+    private double visionError() {
+        return visionTx - LIMELIGHT_TX_AIM + nudgeDeg;
+    }
+
+    // the turret can turn past 180 deg, so the same direction can be written as a, a + 360 or a - 360.
+    // pick the one inside the turret's physical range (closest to the encoder if more than one fits).
+    private double physicalTurretAngle(double angle) {
+        double best = Double.NaN;
+        for (double candidate : new double[]{angle - 360.0, angle, angle + 360.0}) {
+            boolean inRange = candidate >= LEFT_BOUND - SAFETY_MARGIN_DEG && candidate <= RIGHT_BOUND + SAFETY_MARGIN_DEG;
+            if (inRange && (Double.isNaN(best) || Math.abs(candidate - turretDeg) < Math.abs(best - turretDeg))) {
+                best = candidate;
+            }
+        }
+        return Double.isNaN(best) ? AngleUnit.normalizeDegrees(angle) : best;
+    }
+
+    // the Limelight says where the hive is relative to the turret, odometry says where the hive is relative
+    // to the robot. together they give the turret's true angle, which keeps the encoder honest.
+    private void correctEncoderFromVision() {
+        if (Math.abs(turretSpeed) > CORRECTION_MAX_TURRET_SPEED) {
+            return;
+        }
+        double hiveFromRobot = goalAngle(odometry.getX(), odometry.getY(), odometry.getHeading(), goalX, goalY);
+        double trueTurretDeg = physicalTurretAngle(hiveFromRobot - (visionTx - LIMELIGHT_TX_AIM));
+        double diff = trueTurretDeg - turretDeg;
+
+        // off by a whole encoder lap (e.g. the turret didn't start near forward): fix the lap count instead
+        double turretDegPerEncoderTurn = 360.0 * PULLEY_RATIO;
+        if (Math.abs(diff) > turretDegPerEncoderTurn / 2) {
+            int laps = (int) Math.round(diff / turretDegPerEncoderTurn);
+            revolutions += laps;
+            turretDeg += laps * turretDegPerEncoderTurn;
+            diff -= laps * turretDegPerEncoderTurn;
+        }
+
+        encoderCorrectionDeg = Range.clip(encoderCorrectionDeg + CORRECTION_GAIN * diff,
+                -MAX_ENCODER_CORRECTION_DEG, MAX_ENCODER_CORRECTION_DEG);
+    }
+
     public void nudgeRight() {
         nudgeDeg += NUDGE_DEG;
     }
@@ -310,12 +440,22 @@ public class Turret implements Mechanism {
         }
         lastEncoderDeg = encoderDeg;
 
-        turretDeg = encoderToTurretDegrees(encoderDeg, revolutions) - nudgeDeg;
+        double previousDeg = turretDeg;
+        turretDeg = encoderToTurretDegrees(encoderDeg, revolutions) + encoderCorrectionDeg;
+
+        double seconds = speedTimer.seconds();
+        speedTimer.reset();
+        if (seconds > 0) {
+            turretSpeed = (turretDeg - previousDeg) / seconds;
+        }
     }
 
-    // angle the turret should point, relative to the robot's front (+ = right)
+    // angle the turret should point, relative to the robot's front (+ = right).
+    // the Limelight overrides encoder + odometry whenever it sees our tag.
     private double calculateTarget() {
-        double target = goalAngle(odometry.getX(), odometry.getY(), odometry.getHeading(), goalX, goalY);
+        double target = visionLocked
+                ? turretDeg + visionError()
+                : physicalTurretAngle(goalAngle(odometry.getX(), odometry.getY(), odometry.getHeading(), goalX, goalY) + nudgeDeg);
 
         targetInRange = target >= LEFT_BOUND && target <= RIGHT_BOUND;
         return Range.clip(target, LEFT_BOUND, RIGHT_BOUND);
@@ -374,6 +514,10 @@ public class Turret implements Mechanism {
 
         updateHood(); // before the safety stop, so the hood keeps working even if the turret is stopped
         updateEncoder();
+        updateVision();
+        if (visionLocked) {
+            correctEncoderFromVision();
+        }
         updateTurretPID();
 
         if (turretDeg < LEFT_BOUND - SAFETY_MARGIN_DEG || turretDeg > RIGHT_BOUND + SAFETY_MARGIN_DEG) {

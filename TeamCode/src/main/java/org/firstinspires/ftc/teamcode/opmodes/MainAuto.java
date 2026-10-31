@@ -8,6 +8,7 @@ import dev.frozenmilk.sinister.loading.Pinned;
 import dev.nextftc.robot.opmode.NextAutonomous;
 import dev.nextftc.robot.opmode.NextOpMode;
 import org.firstinspires.ftc.teamcode.Sator;
+import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
 /**
  * Main Autonomous mode for Sator robot using NextFTC framework.
@@ -43,6 +44,7 @@ public class MainAuto extends NextOpMode {
 
         // turret must be pointing straight forward when auto starts
         robot.turret.resetRevolutions();
+        robot.turret.setTargetTagId(MainTeleOp.RED_ALLIANCE ? Turret.RED_TAG_ID : Turret.BLUE_TAG_ID);
 
         // Schedule an autonomous command sequence using Groups and Commands
         Scheduler.schedule(

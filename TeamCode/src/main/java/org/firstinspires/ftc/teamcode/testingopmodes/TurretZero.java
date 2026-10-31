@@ -1,6 +1,9 @@
 package org.firstinspires.ftc.teamcode.testingopmodes;
 
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.AnalogInput;
@@ -42,6 +45,18 @@ public class TurretZero extends LinearOpMode {
 
         double goalX = Turret.GOAL_X;
         double goalY = Turret.GOAL_Y;
+
+        // limelight is optional here too
+        Limelight3A limelight = null;
+        int tagId = MainTeleOp.RED_ALLIANCE ? Turret.RED_TAG_ID : Turret.BLUE_TAG_ID;
+        try {
+            limelight = hardwareMap.get(Limelight3A.class, Turret.LIMELIGHT_NAME);
+            limelight.pipelineSwitch(Turret.LIMELIGHT_PIPELINE);
+            limelight.setPollRateHz(100);
+            limelight.start();
+        } catch (Exception e) {
+            limelight = null;
+        }
 
         // turret must start roughly forward, same as the real code
         double lastEncoderDeg = readEncoderDegrees(externalEncoder);
@@ -123,6 +138,38 @@ public class TurretZero extends LinearOpMode {
             telemetry.addData("Wants To Be (target)", "%.1f  (kept within limits)", targetDeg);
             telemetry.addData("Off From Goal", "%.1f  (+ = turret right of goal)", turretDeg - goalDeg);
             telemetry.addData("Off From Target", "%.1f", turretDeg - targetDeg);
+
+            // ---- limelight ----
+            telemetry.addLine("--- Limelight (aim at the hive by hand: tx here = LIMELIGHT_TX_AIM) ---");
+            String tagsSeen = "none";
+            boolean ourTag = false;
+            double tx = 0.0;
+            if (limelight == null) {
+                telemetry.addData("Limelight", "NOT IN CONFIG (name: %s)", Turret.LIMELIGHT_NAME);
+            } else {
+                LLResult result = limelight.getLatestResult();
+                if (result != null && result.isValid()) {
+                    StringBuilder ids = new StringBuilder();
+                    for (LLResultTypes.FiducialResult tag : result.getFiducialResults()) {
+                        ids.append(tag.getFiducialId()).append(' ');
+                        if (tag.getFiducialId() == tagId) {
+                            ourTag = true;
+                            tx = tag.getTargetXDegrees();
+                        }
+                    }
+                    if (ids.length() > 0) {
+                        tagsSeen = ids.toString().trim();
+                    }
+                }
+                telemetry.addData("Connected", limelight.isConnected() ? "yes" : "NO");
+                telemetry.addData("Tags Seen", tagsSeen);
+                telemetry.addData("Looking For Tag", tagId);
+                if (ourTag) {
+                    telemetry.addData("Limelight tx", "%.2f  (+ = hive is right of the camera)", tx);
+                    telemetry.addData("Turret Angle From Vision", "%.1f  (encoder says %.1f)",
+                            goalDeg - (tx - Turret.LIMELIGHT_TX_AIM), turretDeg);
+                }
+            }
 
             double distance = Math.hypot(goalX - x, goalY - y);
             telemetry.addLine("--- Hood (find the hood that scores, write {distance, hood} into HOOD_TABLE) ---");

@@ -65,6 +65,7 @@ public class MainTeleOp extends NextOpMode {
         }
 
         robot.turret.setGoal(Turret.GOAL_X, Turret.GOAL_Y);
+        robot.turret.setTargetTagId(RED_ALLIANCE ? Turret.RED_TAG_ID : Turret.BLUE_TAG_ID);
 
         CommandGamepad driver = new CommandGamepad(gamepad1);
         CommandGamepad operator = new CommandGamepad(gamepad2);
@@ -155,6 +156,11 @@ public class MainTeleOp extends NextOpMode {
         if (robot.turret.isSafetyStopped()) {
             telemetry.addLine("TURRET SAFETY STOP - turret went past its limits, restart OpMode");
         }
+        telemetry.addData("Limelight", !robot.turret.isLimelightConnected() ? "NOT CONNECTED"
+                : robot.turret.isVisionLocked()
+                ? String.format("LOCKED on tag %d, tx %.2f", robot.turret.getTargetTagId(), robot.turret.getVisionTx())
+                : String.format("searching for tag %d", robot.turret.getTargetTagId()));
+        telemetry.addData("Encoder Correction (deg)", "%.2f", robot.turret.getEncoderCorrectionDegrees());
         telemetry.addData("Intake State", robot.intake.getState());
         telemetry.addData("Transfer State", robot.transfer.getState());
         telemetry.addData("Turret State", robot.turret.getState());
