@@ -2,7 +2,8 @@ package org.firstinspires.ftc.teamcode.testingopmodes;
 
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
-import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
+import com.pedropathing.math.Pose;
+import com.pedropathing.revhub.localizers.PinpointLocalizer;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
@@ -15,13 +16,10 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.configs.TurretPIDs;
+import org.firstinspires.ftc.teamcode.pedro.Constants;
 import org.firstinspires.ftc.teamcode.opmodes.MainTeleOp;
 import org.firstinspires.ftc.teamcode.subsystems.FieldZones;
-import org.firstinspires.ftc.teamcode.subsystems.Odometry;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
 /**
@@ -34,7 +32,8 @@ import org.firstinspires.ftc.teamcode.subsystems.Turret;
 public class TurretZero extends LinearOpMode {
     private static final double MAX_MANUAL_POWER = 0.3;
 
-    private GoBildaPinpointDriver pinpoint;
+    // same Pedro Pinpoint setup as the robot (pedro/Constants); only tracks position, never drives
+    private PinpointLocalizer localizer;
 
     @Override
     public void runOpMode() {
@@ -44,8 +43,7 @@ public class TurretZero extends LinearOpMode {
         double hoodPos = Turret.HOOD_DOWN;
         turretRotation.setDirection(Turret.ROTATION_REVERSED ? DcMotorSimple.Direction.REVERSE : DcMotorSimple.Direction.FORWARD);
 
-        pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, Odometry.PINPOINT_NAME);
-        Odometry.applyConfig(pinpoint);
+        localizer = new PinpointLocalizer(hardwareMap, Constants.localizerConfig);
         resetPose();
 
         // tag + hive come from the zone the robot is in, same as the real code
@@ -144,11 +142,11 @@ public class TurretZero extends LinearOpMode {
             }
 
             // ---- goal ----
-            pinpoint.update();
-            Pose2D pose = pinpoint.getPosition();
-            double x = pose.getX(DistanceUnit.INCH);
-            double y = pose.getY(DistanceUnit.INCH);
-            double heading = pose.getHeading(AngleUnit.RADIANS);
+            localizer.update();
+            Pose pose = localizer.pose();
+            double x = pose.x();
+            double y = pose.y();
+            double heading = pose.heading();
 
             zone = FieldZones.find(MainTeleOp.RED_ALLIANCE, x, y, zone);
             if (zone != null) {
@@ -256,11 +254,11 @@ public class TurretZero extends LinearOpMode {
 
     private void resetPose() {
         if (MainTeleOp.RED_ALLIANCE) {
-            pinpoint.setPosition(new Pose2D(DistanceUnit.INCH, MainTeleOp.RED_RESET_X, MainTeleOp.RED_RESET_Y,
-                    AngleUnit.DEGREES, MainTeleOp.RED_RESET_HEADING_DEG));
+            localizer.setPose(new Pose(MainTeleOp.RED_RESET_X, MainTeleOp.RED_RESET_Y,
+                    Math.toRadians(MainTeleOp.RED_RESET_HEADING_DEG)));
         } else {
-            pinpoint.setPosition(new Pose2D(DistanceUnit.INCH, MainTeleOp.BLUE_RESET_X, MainTeleOp.BLUE_RESET_Y,
-                    AngleUnit.DEGREES, MainTeleOp.BLUE_RESET_HEADING_DEG));
+            localizer.setPose(new Pose(MainTeleOp.BLUE_RESET_X, MainTeleOp.BLUE_RESET_Y,
+                    Math.toRadians(MainTeleOp.BLUE_RESET_HEADING_DEG)));
         }
     }
 }

@@ -27,10 +27,10 @@ public class MainAuto extends NextOpMode {
     @Override
     public void start() {
         // robot object is reused across runs, so re-apply hardware setup every run
-        robot.drivetrain.configure();
+        robot.odometry.configure(); // first: making the Pedro follower sets the drive motors to FLOAT
+        robot.drivetrain.configure(); // ...so the drivetrain's BRAKE has to come after it
         robot.intake.configure();
         robot.transfer.configure();
-        robot.odometry.configure();
         robot.turret.configure();
 
         // where the robot starts: same spot as the TeleOp reset (back against the back wall)

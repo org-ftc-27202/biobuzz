@@ -53,10 +53,10 @@ public class MainTeleOp extends NextOpMode {
         // robot object is reused across runs, so re-apply hardware setup every run
         panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
 
-        robot.drivetrain.configure();
+        robot.odometry.configure(); // first: making the Pedro follower sets the drive motors to FLOAT
+        robot.drivetrain.configure(); // ...so the drivetrain's BRAKE has to come after it
         robot.intake.configure();
         robot.transfer.configure();
-        robot.odometry.configure();
         robot.turret.configure();
 
         // keep the pose from auto; only set one if nothing has since the code was loaded
