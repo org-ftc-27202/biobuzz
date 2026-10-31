@@ -20,6 +20,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.configs.TurretPIDs;
 import org.firstinspires.ftc.teamcode.opmodes.MainTeleOp;
+import org.firstinspires.ftc.teamcode.subsystems.FieldZones;
 import org.firstinspires.ftc.teamcode.subsystems.Odometry;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
@@ -47,12 +48,14 @@ public class TurretZero extends LinearOpMode {
         Odometry.applyConfig(pinpoint);
         resetPose();
 
+        // tag + hive come from the zone the robot is in, same as the real code
         double goalX = Turret.GOAL_X;
         double goalY = Turret.GOAL_Y;
+        FieldZones.Zone zone = null;
+        int tagId = -1;
 
         // limelight is optional here too
         Limelight3A limelight = null;
-        int tagId = MainTeleOp.RED_ALLIANCE ? Turret.RED_TAG_ID : Turret.BLUE_TAG_ID;
         try {
             limelight = hardwareMap.get(Limelight3A.class, Turret.LIMELIGHT_NAME);
             limelight.pipelineSwitch(Turret.LIMELIGHT_PIPELINE);
@@ -147,6 +150,13 @@ public class TurretZero extends LinearOpMode {
             double y = pose.getY(DistanceUnit.INCH);
             double heading = pose.getHeading(AngleUnit.RADIANS);
 
+            zone = FieldZones.find(MainTeleOp.RED_ALLIANCE, x, y, zone);
+            if (zone != null) {
+                tagId = zone.tagId;
+                goalX = zone.aimXInches();
+                goalY = zone.aimYInches();
+            }
+
             double goalDeg = Turret.goalAngle(x, y, heading, goalX, goalY);
             double targetDeg = Range.clip(goalDeg, Turret.LEFT_BOUND, Turret.RIGHT_BOUND);
             boolean insideLimits = turretDeg >= Turret.LEFT_BOUND && turretDeg <= Turret.RIGHT_BOUND;
@@ -178,6 +188,8 @@ public class TurretZero extends LinearOpMode {
 
             telemetry.addLine("--- Hive (start: " + (MainTeleOp.RED_ALLIANCE ? "red" : "blue") + ") ---");
             telemetry.addData("Robot X / Y / Heading", "%.1f / %.1f / %.1f deg", x, y, Math.toDegrees(heading));
+            telemetry.addData("Robot In Tiles", "%.2f right, %.2f up", FieldZones.inchesToTiles(x), FieldZones.inchesToTiles(y));
+            telemetry.addData("Zone", zone == null ? "none (off field?)" : zone.name + " -> tag " + zone.tagId);
             telemetry.addData("Game Goal Direction", "%.1f  (ignores limits)", goalDeg);
             telemetry.addData("Wants To Be (target)", "%.1f  (kept within limits)", targetDeg);
             telemetry.addData("Off From Goal", "%.1f  (+ = turret right of goal)", turretDeg - goalDeg);

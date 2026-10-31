@@ -44,7 +44,7 @@ public class MainAuto extends NextOpMode {
 
         // turret must be pointing straight forward when auto starts
         robot.turret.resetRevolutions();
-        robot.turret.setTargetTagId(MainTeleOp.RED_ALLIANCE ? Turret.RED_TAG_ID : Turret.BLUE_TAG_ID);
+        robot.turret.setAlliance(MainTeleOp.RED_ALLIANCE);
 
         // Schedule an autonomous command sequence using Groups and Commands
         Scheduler.schedule(

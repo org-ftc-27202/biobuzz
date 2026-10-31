@@ -64,8 +64,8 @@ public class MainTeleOp extends NextOpMode {
             resetPose();
         }
 
-        robot.turret.setGoal(Turret.GOAL_X, Turret.GOAL_Y);
-        robot.turret.setTargetTagId(RED_ALLIANCE ? Turret.RED_TAG_ID : Turret.BLUE_TAG_ID);
+        // the tag and hive to aim at come from the robot's zone on the field (see FieldZones)
+        robot.turret.setAlliance(RED_ALLIANCE);
 
         CommandGamepad driver = new CommandGamepad(gamepad1);
         CommandGamepad operator = new CommandGamepad(gamepad2);
@@ -160,6 +160,8 @@ public class MainTeleOp extends NextOpMode {
         if (robot.turret.isSafetyStopped()) {
             telemetry.addLine("TURRET SAFETY STOP - turret went past its limits, restart OpMode");
         }
+        telemetry.addData("Zone", "%s -> tag %d%s", robot.turret.getZoneName(), robot.turret.getTargetTagId(),
+                robot.turret.zoneHasAimSpot() ? "" : "  (no hive spot set: using default, no encoder correction)");
         telemetry.addData("Limelight", !robot.turret.isLimelightConnected() ? "NOT CONNECTED"
                 : robot.turret.isVisionLocked()
                 ? String.format("LOCKED on tag %d, tx %.2f", robot.turret.getTargetTagId(), robot.turret.getVisionTx())
@@ -185,6 +187,7 @@ public class MainTeleOp extends NextOpMode {
         panelsTelemetry.addData("Aim Speed (deg/s)", robot.turret.getTurretSpeed());
         panelsTelemetry.addData("Aim Limelight tx", robot.turret.getVisionTx());
         panelsTelemetry.addData("Aim Limelight Locked", robot.turret.isVisionLocked() ? 1.0 : 0.0);
+        panelsTelemetry.addData("Aim Zone Tag", robot.turret.getTargetTagId());
         panelsTelemetry.addData("Aim Using Limelight PID", robot.turret.isUsingVisionPid() ? 1.0 : 0.0);
         panelsTelemetry.addData("Aim Encoder Correction", robot.turret.getEncoderCorrectionDegrees());
         panelsTelemetry.addData("Zero Baseline", 0.0);

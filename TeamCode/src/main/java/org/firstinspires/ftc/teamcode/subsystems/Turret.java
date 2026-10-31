@@ -73,8 +73,7 @@ public class Turret implements Mechanism {
     // slowly corrects the encoder so aiming stays right even after the tag is lost or the belt skips.
     public static final String LIMELIGHT_NAME = "limelight";
     public static final int LIMELIGHT_PIPELINE = 0; // todo: index of the AprilTag pipeline
-    public static final int RED_TAG_ID = 39;  // todo: hive tag to aim at from the red side
-    public static final int BLUE_TAG_ID = 35; // todo: hive tag to aim at from the blue side
+    // which tag to aim at comes from the robot's zone on the field: see FieldZones
     // the tx aim point (TurretPIDs.limelightTxAim) is the tx read when the turret is aimed perfectly;
     // find it in the tester: aim the turret at the hive by hand and read "Limelight tx"
     private static final long LIMELIGHT_MAX_STALENESS_MS = 100; // ignore old results
@@ -121,7 +120,9 @@ public class Turret implements Mechanism {
 
     // limelight
     private Limelight3A limelight;
-    private int tagId = BLUE_TAG_ID;
+    private int tagId = -1; // set from the zone; -1 = no zone yet, nothing to lock onto
+    private boolean redAlliance = false;
+    private FieldZones.Zone zone = null;
     private boolean visionLocked = false;
     private double visionTx = 0.0;
     private double encoderCorrectionDeg = 0.0; // learned from the Limelight, added to the encoder angle
@@ -277,13 +278,34 @@ public class Turret implements Mechanism {
         return safetyStopped;
     }
 
-    // which hive tag to aim at (set from the alliance at the start of TeleOp / auto)
-    public void setTargetTagId(int tagId) {
-        this.tagId = tagId;
+    // which side we're on: picks the red or blue zone map (set at the start of TeleOp / auto)
+    public void setAlliance(boolean red) {
+        if (red != redAlliance) {
+            zone = null;
+        }
+        redAlliance = red;
     }
 
     public int getTargetTagId() {
         return tagId;
+    }
+
+    public String getZoneName() {
+        return zone == null ? "none (off field?)" : zone.name;
+    }
+
+    public boolean zoneHasAimSpot() {
+        return zone != null && zone.hasAimSpot();
+    }
+
+    // pick the zone from odometry, then aim at that zone's tag and hive
+    private void updateZone() {
+        zone = FieldZones.find(redAlliance, odometry.getX(), odometry.getY(), zone);
+        if (zone != null) {
+            tagId = zone.tagId;
+            goalX = zone.aimXInches();
+            goalY = zone.aimYInches();
+        }
     }
 
     public boolean isLimelightConnected() {
@@ -408,6 +430,10 @@ public class Turret implements Mechanism {
     // to the robot. together they give the turret's true angle, which keeps the encoder honest.
     private void correctEncoderFromVision() {
         if (Math.abs(turretSpeed) > CORRECTION_MAX_TURRET_SPEED) {
+            return;
+        }
+        // only when we know where THIS tag's hive is; with 4 hives, the default spot may be the wrong one
+        if (!zoneHasAimSpot()) {
             return;
         }
         double hiveFromRobot = goalAngle(odometry.getX(), odometry.getY(), odometry.getHeading(), goalX, goalY);
@@ -608,6 +634,7 @@ public class Turret implements Mechanism {
 
         transferWheel.setPower(currentState.power);
 
+        updateZone(); // picks the tag + hive for where the robot is
         updateHood(); // before the safety stop, so the hood keeps working even if the turret is stopped
         updateEncoder();
         updateVision();
