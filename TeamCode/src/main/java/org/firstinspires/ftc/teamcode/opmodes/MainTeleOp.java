@@ -172,6 +172,17 @@ public class MainTeleOp extends NextOpMode {
         panelsTelemetry.addData("Turret Current Velocity", robot.turret.getTurretVelocity());
         panelsTelemetry.addData("Turret Target Velocity" , robot.turret.getTurretTarget());
         panelsTelemetry.addData("Turret kV", robot.turret.getTurretPIDkV());
+
+        // turret aiming, for graphing while tuning configs/TurretPIDs
+        panelsTelemetry.addData("Aim Turret Deg", robot.turret.getTurretDegrees());
+        panelsTelemetry.addData("Aim Target Deg", robot.turret.getTargetDegrees());
+        panelsTelemetry.addData("Aim Error", robot.turret.getYawError());       // deg (encoder) or tx (Limelight)
+        panelsTelemetry.addData("Aim Power", robot.turret.getYawPower());
+        panelsTelemetry.addData("Aim Speed (deg/s)", robot.turret.getTurretSpeed());
+        panelsTelemetry.addData("Aim Limelight tx", robot.turret.getVisionTx());
+        panelsTelemetry.addData("Aim Limelight Locked", robot.turret.isVisionLocked() ? 1.0 : 0.0);
+        panelsTelemetry.addData("Aim Using Limelight PID", robot.turret.isUsingVisionPid() ? 1.0 : 0.0);
+        panelsTelemetry.addData("Aim Encoder Correction", robot.turret.getEncoderCorrectionDegrees());
         panelsTelemetry.update();
 
         telemetry.update();

@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.testingopmodes;
 
+import com.bylazar.telemetry.PanelsTelemetry;
+import com.bylazar.telemetry.TelemetryManager;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
@@ -16,6 +18,7 @@ import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
+import org.firstinspires.ftc.teamcode.configs.TurretPIDs;
 import org.firstinspires.ftc.teamcode.opmodes.MainTeleOp;
 import org.firstinspires.ftc.teamcode.subsystems.Odometry;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
@@ -67,13 +70,15 @@ public class TurretZero extends LinearOpMode {
         double maxDeg = Double.NEGATIVE_INFINITY;
         boolean lastDpadUp = false;
 
-        // fine-step power, for finding the smallest power that moves the turret (VISION_MIN_POWER / MIN_POWER)
+        // fine-step power, for finding the smallest power that moves the turret (TurretPIDs.visionMinPower / minPower)
         double stepPower = 0.0;
         double sentPower = 0.0;
         boolean lastLeftBumper = false, lastRightBumper = false;
         double lastTurretDeg = Double.NaN;
         double turretSpeed = 0.0;
         ElapsedTime speedTimer = new ElapsedTime();
+
+        TelemetryManager panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
 
         while (!isStopRequested()) {
             // ---- encoder and lap counting ----
@@ -179,7 +184,7 @@ public class TurretZero extends LinearOpMode {
             telemetry.addData("Off From Target", "%.1f", turretDeg - targetDeg);
 
             // ---- limelight ----
-            telemetry.addLine("--- Limelight (aim at the hive by hand: tx here = LIMELIGHT_TX_AIM) ---");
+            telemetry.addLine("--- Limelight (aim at the hive by hand: tx here = TurretPIDs.limelightTxAim) ---");
             String tagsSeen = "none";
             boolean ourTag = false;
             double tx = 0.0;
@@ -206,7 +211,7 @@ public class TurretZero extends LinearOpMode {
                 if (ourTag) {
                     telemetry.addData("Limelight tx", "%.2f  (+ = hive is right of the camera)", tx);
                     telemetry.addData("Turret Angle From Vision", "%.1f  (encoder says %.1f)",
-                            goalDeg - (tx - Turret.LIMELIGHT_TX_AIM), turretDeg);
+                            goalDeg - (tx - TurretPIDs.limelightTxAim), turretDeg);
                 }
             }
 
@@ -220,6 +225,14 @@ public class TurretZero extends LinearOpMode {
             telemetry.addData("Encoder Voltage / Deg / Laps", "%.3f / %.1f / %d",
                     externalEncoder.getVoltage(), encoderDeg, revolutions);
             telemetry.update();
+
+            // graphs in Panels
+            panelsTelemetry.addData("Test Turret Power", sentPower);
+            panelsTelemetry.addData("Test Turret Speed (deg/s)", turretSpeed);
+            panelsTelemetry.addData("Test Turret Deg", turretDeg);
+            panelsTelemetry.addData("Test Limelight tx", tx);
+            panelsTelemetry.addData("Test Limelight Sees Tag", ourTag ? 1.0 : 0.0);
+            panelsTelemetry.update();
         }
 
         turretRotation.setPower(0.0);
