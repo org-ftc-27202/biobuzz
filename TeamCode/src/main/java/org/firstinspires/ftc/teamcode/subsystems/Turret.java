@@ -53,7 +53,7 @@ public class Turret implements Mechanism {
     private static final double MIN_VOLTS = 0.015;
     private static final double MAX_VOLTS = 3.230;
     public static final double PULLEY_RATIO = 55.0 / 109.0; // turret degrees per encoder degree
-    public static final double TURRET_ZERO_DEG = 129.7; // todo: re-find with Turret Zero tuner
+    public static final double TURRET_ZERO_DEG = 123.4; // todo: re-find with Turret Zero tuner
 
     // how far the turret may turn from forward (- = left, + = right)
     public static final double LEFT_BOUND = -88.6;

@@ -25,7 +25,7 @@ public class MainTeleOp extends NextOpMode {
 
     // SETUP
     // todo: set before each match (or make a red and a blue TeleOp)
-    public static final boolean RED_ALLIANCE = false;
+    public static final boolean RED_ALLIANCE = true;
 
     // short-side start poses from decode endurancebot (Pedro coordinates); also the dpad-up reset spot
     public static final double BLUE_RESET_X = 111.0, BLUE_RESET_Y = 7.2, BLUE_RESET_HEADING_DEG = 90.0;
