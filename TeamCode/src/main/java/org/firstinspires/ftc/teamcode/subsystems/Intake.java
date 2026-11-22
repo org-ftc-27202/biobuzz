@@ -28,7 +28,7 @@ public class Intake implements Mechanism {
 
     public void configure() {
         intake.setZeroPowerBehavior(NextMotor.ZeroPowerBehavior.BRAKE);
-        intake.setDirection(NextMotor.Direction.FORWARD);
+        intake.setDirection(NextMotor.Direction.REVERSE);
     }
 
     public void setPower(double power) {

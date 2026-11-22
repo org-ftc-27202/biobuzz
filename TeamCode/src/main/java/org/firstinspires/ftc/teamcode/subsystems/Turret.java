@@ -627,13 +627,16 @@ public class Turret implements Mechanism {
     public double getTurretVelocity(){return turretWheel.getEncoderVelocity().into(RotationsPerMinute);}
     public double getTurretPIDkV(){return turretWheel.getVelocityConstants().getKV();}
 
+    public NextCRServo getTransferWheel() {
+        return transferWheel;
+    }
 
     @Override
     public void periodic() {
         loopMs = smooth(loopMs, loopTimer.milliseconds());
         loopTimer.reset();
 
-        transferWheel.setPower(currentState.power);
+        transferWheel.setPower(currentState.power/4600);
 
         updateZone(); // picks the tag + hive for where the robot is
         updateHood(); // before the safety stop, so the hood keeps working even if the turret is stopped

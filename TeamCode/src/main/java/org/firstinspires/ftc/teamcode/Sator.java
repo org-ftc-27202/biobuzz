@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode;
 
-import dev.frozenmilk.sinister.loading.Pinned;
 import dev.nextftc.robot.Mechanism;
 import dev.nextftc.robot.NextRobot;
 

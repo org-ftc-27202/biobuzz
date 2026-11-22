@@ -114,7 +114,7 @@ public class MainTeleOp extends NextOpMode {
         driver.leftBumper().onTrue(
                 parallel(
                         robot.turret.setStateCommand(Turret.State.SHOOT),
-                        robot.transfer.setStateCommand(Transfer.State.FORWARDS),
+                        robot.transfer.launchCommand(),
                         robot.intake.setStateCommand(Intake.State.FORWARDS)
                 )
         );
@@ -173,6 +173,8 @@ public class MainTeleOp extends NextOpMode {
         telemetry.addData("Turret State", robot.turret.getState());
         telemetry.addData("Turret Target Velocity", robot.turret.getTurretTarget());
         telemetry.addData("Turret Current Velocity", robot.turret.getTurretVelocity());
+
+        telemetry.addData("Turret Transfer Wheel power", robot.turret.getTransferWheel().getPower());
 
 
         panelsTelemetry.addData("Turret Current Velocity", robot.turret.getTurretVelocity());

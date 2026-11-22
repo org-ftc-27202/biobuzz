@@ -1,14 +1,20 @@
 package org.firstinspires.ftc.teamcode.opmodes;
 
+import static com.pedropathing.ivy.Scheduler.schedule;
+import static com.pedropathing.ivy.pedro.PedroCommands.follow;
+
+import com.pedropathing.follower.Follower;
 import com.pedropathing.ivy.Scheduler;
 import com.pedropathing.ivy.commands.Commands;
 import com.pedropathing.ivy.groups.Groups;
 
-import dev.frozenmilk.sinister.loading.Pinned;
+
 import dev.nextftc.robot.opmode.NextAutonomous;
 import dev.nextftc.robot.opmode.NextOpMode;
 import org.firstinspires.ftc.teamcode.Sator;
+import org.firstinspires.ftc.teamcode.pedro.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
+
 
 /**
  * Main Autonomous mode for Sator robot using NextFTC framework.
@@ -18,10 +24,13 @@ import org.firstinspires.ftc.teamcode.subsystems.Turret;
 public class MainAuto extends NextOpMode {
 
     private final Sator robot;
+    private Follower follower;
+    private Paths paths = new Paths(Alliance.RED_ALLIANCE);
 
     public MainAuto(Sator robot) {
         super(robot);
         this.robot = robot;
+
     }
 
     @Override
@@ -32,7 +41,7 @@ public class MainAuto extends NextOpMode {
         robot.intake.configure();
         robot.transfer.configure();
         robot.turret.configure();
-
+        follower = Constants.create(hardwareMap);
         // where the robot starts: same spot as the TeleOp reset (back against the back wall)
         if (MainTeleOp.RED_ALLIANCE) {
             robot.odometry.setPose(MainTeleOp.RED_RESET_X, MainTeleOp.RED_RESET_Y,
@@ -45,20 +54,21 @@ public class MainAuto extends NextOpMode {
         // turret must be pointing straight forward when auto starts
         robot.turret.resetRevolutions();
         robot.turret.setAlliance(MainTeleOp.RED_ALLIANCE);
+        Scheduler.reset();
 
         // Schedule an autonomous command sequence using Groups and Commands
-        Scheduler.schedule(
+        schedule(
                 Groups.sequential(
                         // Drive forward for 1.5 seconds
                         Groups.race(
-                                robot.drivetrain.driveCommand(() -> 0.5, () -> 0.0, () -> 0.0),
+                                follow(follower, paths.toLaunch()),
                                 Commands.waitMs(1500)
                         ),
                         // Pause briefly
                         Commands.waitMs(500),
                         // Spin right for 1.0 second
                         Groups.race(
-                                robot.drivetrain.driveCommand(() -> 0.0, () -> 0.0, () -> 0.5),
+                                //robot.drivetrain.driveCommand(() -> 0.0, () -> 0.0, () -> 0.5),
                                 Commands.waitMs(1000)
                         ),
                         // Stop drivetrain
@@ -71,5 +81,7 @@ public class MainAuto extends NextOpMode {
     public void periodic() {
         telemetry.addData("Auto Heading (rad)", robot.drivetrain.getHeading());
         telemetry.update();
+        follower.update();
+        Scheduler.execute();
     }
 }
