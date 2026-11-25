@@ -9,7 +9,7 @@ import com.pedropathing.paths.Path;
 public class Paths {
     private Alliance alliance;
     private final PoseFactory p = PoseFactory.degrees();
-    private final Pose startPose, launchPose;
+    private final Pose startPose, launchPose, flowerPose;
 
 
 
@@ -25,6 +25,7 @@ public class Paths {
         }
         startPose = p.of(MainTeleOp.RED_RESET_X, MainTeleOp.RED_RESET_Y, MainTeleOp.RED_RESET_HEADING_DEG);
         launchPose = p.of(56, 24, 90);
+        flowerPose = p.of(48, 10, 180);
 
 
 

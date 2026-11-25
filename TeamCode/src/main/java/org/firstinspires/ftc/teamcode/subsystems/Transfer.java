@@ -63,7 +63,7 @@ public class Transfer implements Mechanism {
 		}
     }
     public void launch(){
-        setState(State.BACKWARDS);
+        setState(State.FORWARDS);
         msTimer.reset();
         launchBoot = true;
     }
@@ -81,7 +81,7 @@ public class Transfer implements Mechanism {
 
         transfer.setThrottle(currentState.power);
         if (launchBoot){
-            setState(State.BACKWARDS);
+            setState(State.FORWARDS);
             if (msTimer.milliseconds()>400){
                 launchBoot = false;
                 msTimer.reset();
