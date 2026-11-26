@@ -100,6 +100,17 @@ public class Turret implements Mechanism {
             {100.0, 0.120},
     };
 
+    private static final double[][] VELOCITY_TABLE = {
+            {40.0, 1000},
+            {60.0, 2000},
+            {70.0, 3000},
+            {80.0, 4000},
+            {90.0, 4300},
+            {100.0, 4400},
+    };
+
+    private boolean turretOn;
+
     private double goalX = GOAL_X;
     private double goalY = GOAL_Y;
     private boolean aiming = false;
@@ -490,12 +501,33 @@ public class Turret implements Mechanism {
         return HOOD_TABLE[HOOD_TABLE.length - 1][1];
     }
 
+    public static double velocityForDistance(double distance) {
+        if (distance <= VELOCITY_TABLE[0][0]) {
+            return VELOCITY_TABLE[0][1];
+        }
+        for (int i = 1; i < VELOCITY_TABLE.length; i++) {
+            if (distance <= VELOCITY_TABLE[i][0]) {
+                double d0 = VELOCITY_TABLE[i - 1][0], h0 = VELOCITY_TABLE[i - 1][1];
+                double d1 = VELOCITY_TABLE[i][0], h1 = VELOCITY_TABLE[i][1];
+                return h0 + (h1 - h0) * (distance - d0) / (d1 - d0);
+            }
+        }
+        return VELOCITY_TABLE[VELOCITY_TABLE.length - 1][1];
+    }
+
     private void updateHood() {
         distanceToGoal = Math.hypot(goalX - odometry.getX(), goalY - odometry.getY());
 
         double pos = aiming ? hoodForDistance(distanceToGoal) + hoodNudge : HOOD_DOWN;
         hoodPos = Range.clip(pos, Math.min(HOOD_UP, HOOD_DOWN), Math.max(HOOD_UP, HOOD_DOWN));
         hood.setPosition(hoodPos);
+    }
+    private void updateTurretVelocity() {
+        distanceToGoal = Math.hypot(goalX - odometry.getX(), goalY - odometry.getY());
+
+        double pos = turretOn ? velocityForDistance(distanceToGoal) + hoodNudge : 0.0;
+
+        turretTarget = pos;
     }
 
     public static double voltageToDegrees(double voltage) {

@@ -14,7 +14,7 @@ import org.firstinspires.ftc.teamcode.pedro.procedures.Tests;
 
 import dev.frozenmilk.sinister.loading.Pinned;
 
-@Pinned
+
 public class Tuning {
     // Tuners go here\
 

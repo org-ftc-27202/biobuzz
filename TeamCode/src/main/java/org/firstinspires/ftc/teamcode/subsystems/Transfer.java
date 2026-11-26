@@ -11,7 +11,8 @@ public class Transfer implements Mechanism {
 
     private final ElapsedTime msTimer = new ElapsedTime();
     private double ms = 0.0;
-    private boolean launchBoot = false;
+    private boolean launchBoot1 = false;
+    private boolean launchBoot2 = false;
     private final NextMotor transfer = new NextMotor("transfer");
 
     public enum State {
@@ -27,7 +28,6 @@ public class Transfer implements Mechanism {
     }
 
     private State currentState = State.OFF;
-
     public Transfer() {
 
     }
@@ -63,9 +63,10 @@ public class Transfer implements Mechanism {
 		}
     }
     public void launch(){
-        setState(State.FORWARDS);
+        setState(State.BACKWARDS);
         msTimer.reset();
-        launchBoot = true;
+        launchBoot1 = true;
+        launchBoot2 = false;
     }
 
     public Command setStateCommand(State state) {
@@ -80,10 +81,21 @@ public class Transfer implements Mechanism {
     public void periodic() {
 
         transfer.setThrottle(currentState.power);
-        if (launchBoot){
+        if (launchBoot1){
             setState(State.FORWARDS);
             if (msTimer.milliseconds()>400){
-                launchBoot = false;
+                launchBoot1 = false;
+                launchBoot2 = true;
+                msTimer.reset();
+                setState(State.BACKWARDS);
+            }
+
+        }
+        if (launchBoot2){
+            setState(State.BACKWARDS);
+            if (msTimer.milliseconds()>400){
+                launchBoot1 = false;
+                launchBoot2 = false;
                 msTimer.reset();
                 setState(State.FORWARDS);
             }

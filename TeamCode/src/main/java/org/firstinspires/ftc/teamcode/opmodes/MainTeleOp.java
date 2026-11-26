@@ -29,7 +29,7 @@ public class MainTeleOp extends NextOpMode {
 
     // short-side start poses from decode endurancebot (Pedro coordinates); also the dpad-up reset spot
     public static final double BLUE_RESET_X = 111.0, BLUE_RESET_Y = 7.2, BLUE_RESET_HEADING_DEG = 90.0;
-    public static final double RED_RESET_X = 30.5, RED_RESET_Y = 7.2, RED_RESET_HEADING_DEG = 90.0;
+    public static final double RED_RESET_X = 30.6, RED_RESET_Y = 6.4, RED_RESET_HEADING_DEG = 180;
 
     private final Sator robot;
 
@@ -90,6 +90,10 @@ public class MainTeleOp extends NextOpMode {
 
         // 'B' turns turret auto-aim on/off
         driver.b().onTrue(robot.turret.toggleAimCommand());
+
+        driver.x().onTrue(robot.intake.setScooperCollect());
+        driver.y().onTrue(robot.intake.setScooperStore());
+
 
         // dpad up: robot is sitting on the reset spot, so tell odometry where it is
         driver.dpadUp().onTrue(Commands.instant(this::resetPose));
@@ -175,6 +179,8 @@ public class MainTeleOp extends NextOpMode {
         telemetry.addData("Turret Current Velocity", robot.turret.getTurretVelocity());
 
         telemetry.addData("Turret Transfer Wheel power", robot.turret.getTransferWheel().getPower());
+        telemetry.addData("Scooper Position", robot.intake.getScooper().getPosition());
+
 
 
         panelsTelemetry.addData("Turret Current Velocity", robot.turret.getTurretVelocity());

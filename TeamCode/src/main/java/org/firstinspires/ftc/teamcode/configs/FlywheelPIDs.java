@@ -10,5 +10,5 @@ public class FlywheelPIDs {
     public static double kA = 0.0;
     public static double kV = 0.0001695;
     public static double kS = 0.1;
-    public static double turretTarget = 4600.0;
+    public static double turretTarget = 4100.0;
 }

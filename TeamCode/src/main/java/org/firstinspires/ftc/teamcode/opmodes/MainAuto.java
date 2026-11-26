@@ -13,6 +13,8 @@ import dev.nextftc.robot.opmode.NextAutonomous;
 import dev.nextftc.robot.opmode.NextOpMode;
 import org.firstinspires.ftc.teamcode.Sator;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
+import org.firstinspires.ftc.teamcode.subsystems.Intake;
+import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
 
@@ -37,19 +39,15 @@ public class MainAuto extends NextOpMode {
     public void start() {
         // robot object is reused across runs, so re-apply hardware setup every run
         robot.odometry.configure(); // first: making the Pedro follower sets the drive motors to FLOAT
-        robot.drivetrain.configure(); // ...so the drivetrain's BRAKE has to come after it
+        //robot.drivetrain.configure(); // ...so the drivetrain's BRAKE has to come after it
         robot.intake.configure();
         robot.transfer.configure();
         robot.turret.configure();
         follower = Constants.create(hardwareMap);
         // where the robot starts: same spot as the TeleOp reset (back against the back wall)
-        if (MainTeleOp.RED_ALLIANCE) {
             robot.odometry.setPose(MainTeleOp.RED_RESET_X, MainTeleOp.RED_RESET_Y,
                     Math.toRadians(MainTeleOp.RED_RESET_HEADING_DEG));
-        } else {
-            robot.odometry.setPose(MainTeleOp.BLUE_RESET_X, MainTeleOp.BLUE_RESET_Y,
-                    Math.toRadians(MainTeleOp.BLUE_RESET_HEADING_DEG));
-        }
+
 
         // turret must be pointing straight forward when auto starts
         robot.turret.resetRevolutions();
@@ -60,26 +58,24 @@ public class MainAuto extends NextOpMode {
         schedule(
                 Groups.sequential(
                         // Drive forward for 1.5 seconds
-                        Groups.race(
-                                follow(follower, paths.toLaunch()),
-                                Commands.waitMs(1500)
-                        ),
+                        robot.turret.setStateCommand(Turret.State.ON),
+                        robot.intake.setStateCommand(Intake.State.FORWARDS),
+                        robot.transfer.setStateCommand(Transfer.State.FORWARDS),
                         // Pause briefly
                         Commands.waitMs(500),
                         // Spin right for 1.0 second
-                        Groups.race(
-                                //robot.drivetrain.driveCommand(() -> 0.0, () -> 0.0, () -> 0.5),
-                                Commands.waitMs(1000)
-                        ),
+                        follow(follower, paths.toGarden()),
+                        Commands.waitMs(1000),
+                        follow(follower, paths.backFromGarden())
+
                         // Stop drivetrain
-                        Commands.instant(robot.drivetrain::stop)
                 )
         );
     }
 
     @Override
     public void periodic() {
-        telemetry.addData("Auto Heading (rad)", robot.drivetrain.getHeading());
+        telemetry.addData("Auto Heading (rad)", follower.localizer.pose());
         telemetry.update();
         follower.update();
         Scheduler.execute();
